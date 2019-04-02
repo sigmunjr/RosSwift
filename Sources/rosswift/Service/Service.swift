@@ -9,6 +9,7 @@ import Foundation
 import NIO
 import RosTime
 import StdMsgs
+import BinaryCoder
 
 public struct Service {
 
@@ -105,7 +106,19 @@ public struct Service {
             do {
 
             try transport.connect(host: host, port: Int(port)).map { channel -> Void in
-                _ = channel.writeAndFlush(keymap)
+                let buffer = Header.write(keyVals: keymap)
+                do {
+                    let sizeBuffer = try BinaryEncoder.encode(UInt32(buffer.count))
+                    var buf = channel.allocator.buffer(capacity: buffer.count + 4)
+                    buf.writeBytes(sizeBuffer + buffer)
+                    let data = IOData.byteBuffer(buf)
+
+                    channel.writeAndFlush(data).whenFailure { error in
+                        ROS_DEBUG("exists, write failed to \(String(describing: channel.remoteAddress))\nerror: \(error))")
+                    }
+                } catch {
+                    ROS_ERROR("encode failed: \(error)")
+                }
             }.wait()
             return true
             } catch {

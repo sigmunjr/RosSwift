@@ -7,7 +7,6 @@
 
 import Foundation
 import NIO
-import _NIO1APIShims
 
 extension SocketAddress {
     var host: String {

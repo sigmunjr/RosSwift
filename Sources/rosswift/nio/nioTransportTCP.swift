@@ -30,8 +30,7 @@ extension Nio {
         }
 
         func decodeLast(context: ChannelHandlerContext, buffer: inout ByteBuffer, seenEOF: Bool) throws -> DecodingState {
-            self.cumulationBuffer = nil
-            return .continue
+            return try self.decode(context: context, buffer: &buffer)
         }
 
     }
