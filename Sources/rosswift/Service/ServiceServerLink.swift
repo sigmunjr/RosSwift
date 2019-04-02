@@ -57,11 +57,11 @@ final class ServiceServerLink: ChannelInboundHandler {
             do {
                 let sizeBuffer = try BinaryEncoder.encode(UInt32(buffer.count))
                 var buf = channel.allocator.buffer(capacity: buffer.count + 4)
-                buf.write(bytes: sizeBuffer + buffer)
+                buf.writeBytes(sizeBuffer + buffer)
                 let data = IOData.byteBuffer(buf)
 
                 channel.writeAndFlush(data).whenFailure { error in
-                    ROS_DEBUG("ServiceServerLink, write failed to \(channel.remoteAddress)\nerror: \(error))")
+                    ROS_DEBUG("ServiceServerLink, write failed to \(String(describing: channel.remoteAddress))\nerror: \(error))")
                 }
             } catch {
                 ROS_ERROR("encode failed: \(error)")
@@ -73,7 +73,7 @@ final class ServiceServerLink: ChannelInboundHandler {
 
         @objc
         func onConnectionDropped(note: NSNotification) {
-            ROS_ERROR("\(onConnectionDropped) is not fully implemented")
+            ROS_ERROR(#""onConnectionDropped" is not fully implemented"#)
             isDropped = true
             ServiceManager.instance.removeServiceServerLink(client: self)
         }
@@ -86,23 +86,23 @@ final class ServiceServerLink: ChannelInboundHandler {
 
         func call(req: SerializedMessage) -> EventLoopFuture<SerializedMessage> {
 
-            let promise: EventLoopPromise<SerializedMessage> = channel!.eventLoop.newPromise()
+            let promise: EventLoopPromise<SerializedMessage> = channel!.eventLoop.makePromise()
             guard let c = channel else {
-                promise.fail(error: ServiceError.invalidInput("ServiceServerLink::call has no connection"))
+                promise.fail(ServiceError.invalidInput("ServiceServerLink::call has no connection"))
                 return promise.futureResult
             }
 
             var buffer = c.allocator.buffer(capacity: req.buf.count)
-            buffer.write(bytes: req.buf)
+            buffer.writeBytes(req.buf)
 
             c.writeAndFlush(buffer).whenFailure { error in
-                ROS_DEBUG("ServiceServerLink \(#line), write failed to \(c.remoteAddress)\nerror: \(error))")
+                ROS_DEBUG("ServiceServerLink \(#line), write failed to \(String(describing: c.remoteAddress))\nerror: \(error))")
             }
-            c.closeFuture.whenComplete {
+            c.closeFuture.whenComplete { result in
                 if self.response.buf.isEmpty {
-                    promise.fail(error: ServiceError.noResponse)
+                    promise.fail(ServiceError.noResponse)
                 } else {
-                    promise.succeed(result: self.response)
+                    promise.succeed(self.response)
                 }
             }
 
@@ -118,7 +118,7 @@ final class ServiceServerLink: ChannelInboundHandler {
 
         typealias InboundIn = ByteBuffer
 
-        func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+        func channelRead(context: ChannelHandlerContext, data: NIOAny) {
             var buffer = self.unwrapInboundIn(data)
             while buffer.readableBytes > 0 {
             switch state {
@@ -137,11 +137,11 @@ final class ServiceServerLink: ChannelInboundHandler {
 
                     guard let line = buffer.readString(length: Int(topicLen)) else {
                         ROS_DEBUG("Received an invalid TCPROS header. Each line must have an equals sign.")
-                        _ = ctx.close()
+                        _ = context.close()
                         return
                     }
 
-                    guard let equalIndex = line.index(of: "=") else {
+                    guard let equalIndex = line.firstIndex(of: "=") else {
                         fatalError("Received an invalid TCPROS header. Each line must have an equals sign.")
                     }
                     let key = String(line.prefix(upTo: equalIndex))
@@ -157,7 +157,7 @@ final class ServiceServerLink: ChannelInboundHandler {
                 if let rawMessage = buffer.readBytes(length: buffer.readableBytes) {
                     response = SerializedMessage(buffer: rawMessage)
                 }
-                ctx.close()
+                let _ = context.close()
             }
             }
         }

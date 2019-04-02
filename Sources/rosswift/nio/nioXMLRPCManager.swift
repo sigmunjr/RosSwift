@@ -8,6 +8,7 @@
 import Foundation
 import NIO
 
+
 typealias XMLRPCFunc = (XmlRpcValue) -> XmlRpcValue
 
 struct XmlRpc {
@@ -85,7 +86,7 @@ final class XMLRPCManager {
         if !methodName.isEmpty && XmlRpcUtil.findTag(tag: .params, xml: &xmlSeq) {
             while XmlRpcUtil.nextTagIs(tag: .param, xml: &xmlSeq) {
                 let v = XmlRpcValue()
-                v.fromXML(xml: &xmlSeq)
+                let _ = v.fromXML(xml: &xmlSeq)
                 params.append(v)
                 _ = XmlRpcUtil.nextTagIs(tag: .endParam, xml: &xmlSeq)
             }

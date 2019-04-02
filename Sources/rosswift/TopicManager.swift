@@ -560,11 +560,7 @@ extension Ros {
                 if p.numCallbacks == 0 {
                     _ = unregisterPublisher(topic: p.name)
                     p.drop()
-                    #if swift(>=4.2)
-                    advertisedTopics.removeAll(where: { $0.name == topic && !$0.dropped })
-                    #else
-                    ROS_DEBUG("advertisedTopics.removeAll not called")
-                    #endif
+                    advertisedTopics.removeAll(where: { $0.name == topic && !$0.isDropped.load() })
                     advertisedTopicNames.remove(where: { $0 == topic })
                 }
             }

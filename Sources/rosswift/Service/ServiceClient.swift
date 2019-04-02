@@ -57,13 +57,13 @@ internal final class ServiceClient {
    func call(req: SerializedMessage, serviceMd5sum: String) -> EventLoopFuture<SerializedMessage> {
 
         let eventLoop = threadGroup.next()
-        let promise: EventLoopPromise<SerializedMessage> = eventLoop.newPromise()
+    let promise: EventLoopPromise<SerializedMessage> = eventLoop.makePromise()
 
         guard let impl = implementation, impl.serviceMd5sum == serviceMd5sum else {
             let err = ServiceError.invalidInput("Call to service [\(implementation!.name)]" +
                 " with md5sum [\(serviceMd5sum)] does not match md5sum when the handle was" +
                 " created ([\(implementation!.serviceMd5sum)])")
-            promise.fail(error: err)
+            promise.fail(err)
             return promise.futureResult
         }
         var link: ServiceServerLink?
@@ -78,7 +78,7 @@ internal final class ServiceClient {
                     headerValues: impl.headerValue)
 
                 if impl.serverLink == nil {
-                    promise.fail(error: ServiceError.invalidInput("Could not create ServiceServerLink"))
+                    promise.fail(ServiceError.invalidInput("Could not create ServiceServerLink"))
                     return promise.futureResult
                 }
             }
@@ -91,11 +91,11 @@ internal final class ServiceClient {
                 responseMd5sum: serviceMd5sum,
                 headerValues: impl.headerValue)
             if link == nil {
-                promise.fail(error: ServiceError.invalidInput("Could not create ServiceServerLink"))
+                promise.fail(ServiceError.invalidInput("Could not create ServiceServerLink"))
                 return promise.futureResult
             }
         }
-        promise.succeed(result: SerializedMessage())
+    promise.succeed(SerializedMessage())
 
         return link!.call(req: req)
     }

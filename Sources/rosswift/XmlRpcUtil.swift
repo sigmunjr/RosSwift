@@ -48,8 +48,8 @@ enum XmlRpcUtil {
     }
 
     static func getNextTag(xml: inout String.SubSequence) -> String {
-        guard let open = xml.index(of: "<"),
-            let close = xml.index(of: ">"), close > open else {
+        guard let open = xml.firstIndex(of: "<"),
+            let close = xml.firstIndex(of: ">"), close > open else {
                 return ""
         }
 

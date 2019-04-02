@@ -86,8 +86,16 @@ extension Ros {
 
         pub.addSubscriberLink(self)
 
-        connection.writeHeader(keyVals: m).whenComplete {
-            self.headerWritten = true
+        connection.writeHeader(keyVals: m).whenComplete { result in
+            switch result {
+            case .success:
+                self.headerWritten = true
+            case .failure(let error):
+                ROS_ERROR("Failed to write header: \(error)")
+                // FIXME: is this correct?
+                self.headerWritten = true
+
+            }
         }
 
         return true

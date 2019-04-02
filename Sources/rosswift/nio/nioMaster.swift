@@ -23,7 +23,7 @@ final class XmlRpcMessageDelimiterCodec: ByteToMessageDecoder {
 
     public var cumulationBuffer: ByteBuffer?
 
-    public func decode(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+    public func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
 
         guard let header = buffer.getString(at: buffer.readerIndex, length: buffer.readableBytes) else {
             return .needMoreData
@@ -34,7 +34,7 @@ final class XmlRpcMessageDelimiterCodec: ByteToMessageDecoder {
         }
 
         let content = String(header[range.upperBound..<header.endIndex])
-        guard let index = content.index(of: "\r\n") else {
+        guard let index = content.firstIndex(of: "\r\n") else {
             return .needMoreData
         }
 
@@ -42,20 +42,20 @@ final class XmlRpcMessageDelimiterCodec: ByteToMessageDecoder {
             return .needMoreData
         }
 
-        guard let ind2 = content.index(of: "<") else {
+        guard let _ = content.firstIndex(of: "<") else {
             ROS_DEBUG("Malformed header")
             return .needMoreData
         }
 
         if content.count >= length {
-            ctx.fireChannelRead(self.wrapInboundOut(buffer.readSlice(length: buffer.readableBytes)!))
+            context.fireChannelRead(self.wrapInboundOut(buffer.readSlice(length: buffer.readableBytes)!))
             return .continue
         }
 
         return .needMoreData
     }
 
-    func decodeLast(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+    func decodeLast(context: ChannelHandlerContext, buffer: inout ByteBuffer, seenEOF: Bool) throws -> DecodingState {
         /// set cumulationBuffer to avoid to be called again with the same data
         /// https://github.com/apple/swift-nio/issues/108
         ///
@@ -75,11 +75,11 @@ final class XmlRpcHandler: ChannelInboundHandler {
         self.owner = owner
     }
 
-    func channelActive(ctx: ChannelHandlerContext) {
-        owner.registerHandler(for: ctx.channel, handler: self)
+    func channelActive(context: ChannelHandlerContext) {
+        owner.registerHandler(for: context.channel, handler: self)
     }
 
-    public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+    public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         var buffer = self.unwrapInboundIn(data)
         if let string = buffer.readString(length: buffer.readableBytes) {
             guard let range = string.lowercased().range(of: "content-length: ")  else {
@@ -88,17 +88,17 @@ final class XmlRpcHandler: ChannelInboundHandler {
             }
 
             let content = String(string[range.upperBound..<string.endIndex])
-            guard let index = content.index(of: "\r\n") else {
+            guard let index = content.firstIndex(of: "\r\n") else {
                 ROS_DEBUG("Malformed header")
                 return
             }
 
-            guard let length = Int(content[content.startIndex..<index]) else {
+            guard let _ = Int(content[content.startIndex..<index]) else {
                 ROS_DEBUG("length error")
                 return
             }
 
-            guard let ind2 = content.index(of: "<") else {
+            guard let ind2 = content.firstIndex(of: "<") else {
                 ROS_DEBUG("Malformed header")
                 return
             }
@@ -107,16 +107,16 @@ final class XmlRpcHandler: ChannelInboundHandler {
             if let r = XMLRPCClient.parseResponse(xml: resp) {
                 response = r
             }
-            ctx.close(promise: nil)
+            context.close(promise: nil)
         }
     }
 
-    public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+    public func errorCaught(context: ChannelHandlerContext, error: Error) {
         ROS_ERROR(error.localizedDescription)
 
         // As we are not really interested getting notified on success or failure we just pass nil as promise to
         // reduce allocations.
-        ctx.close(promise: nil)
+        context.close(promise: nil)
     }
 }
 
@@ -196,9 +196,8 @@ struct XMLRPCClient {
                 // Enable SO_REUSEADDR.
                 .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
                 .channelInitializer { channel in
-                    channel.pipeline.addHandlers([XmlRpcMessageDelimiterCodec(),
-                                                  XmlRpcHandler(owner: self)],
-                                                  first: true)
+                    channel.pipeline.addHandlers([ByteToMessageHandler(XmlRpcMessageDelimiterCodec()),
+                                                  XmlRpcHandler(owner: self)])
                 }
         }
 
@@ -292,32 +291,31 @@ struct XMLRPCClient {
             let xml = generateRequest(methodName: method, params: request, host: host, port: port)
 
             let eventLoop = group.next()
-            let promise: EventLoopPromise<XmlRpcValue> = eventLoop.newPromise()
+            let promise: EventLoopPromise<XmlRpcValue> = eventLoop.makePromise()
 
             ROS_DEBUG("trying to connect to \(host):\(port) for method \(method)")
 
             bootstrap?.connect(host: host, port: Int(port)).map { channel -> Void in
                 var buffer = channel.allocator.buffer(capacity: xml.utf8.count)
-                buffer.write(string: xml)
+                buffer.writeString(xml)
                 _ = channel.writeAndFlush(buffer).whenFailure { error in
                     ROS_ERROR("write failed to \(channel.remoteAddress!) [\(error)]")
                 }
-                channel.closeFuture.whenComplete {
+                channel.closeFuture.whenComplete { result in
+                    // FIXME: check result 
 
                     guard let handler = self.handlers[ObjectIdentifier(channel)] else {
-                        fatalError()
-                        return
+                        fatalError("failed to connect to \(host):\(port) for method \(method)")
                     }
 
-                    //                    let result = self.validate(response: handler.response, for: method)
                     let result = self.validateXmlrpcResponse(method: method, response: handler.response)
 
                     self.unregisterHandler(for: channel)
 
                     if let r = result, r.valid() {
-                        promise.succeed(result: r)
+                        promise.succeed(r)
                     } else {
-                        promise.fail(error: MasterError.invalidResponse(result?.description ?? "no description"))
+                        promise.fail(MasterError.invalidResponse(result?.description ?? "no description"))
                     }
                 }
             }.whenFailure { error in

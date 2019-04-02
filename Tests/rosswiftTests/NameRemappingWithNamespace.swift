@@ -20,7 +20,7 @@ class NameRemappingWithNamespace: XCTestCase {
                                             "/a/test_local:=test_local2",
                                             "test_relative:=/b/test_relative"]
         Ros.ThisNode.instance.namespace = "a"
-        Ros.initialize(argv: &args, name: "name_remapped_with_ns")
+        _ = Ros.initialize(argv: &args, name: "name_remapped_with_ns")
         Ros.Param.set("/b/test_full", "asdf")
         Ros.Param.set("/a/test_local2", "asdf")
         Ros.Param.set("/b/test_relative", "asdf")

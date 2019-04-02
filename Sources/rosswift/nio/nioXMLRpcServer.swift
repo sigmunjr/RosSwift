@@ -7,6 +7,7 @@
 
 import Foundation
 import NIO
+import _NIO1APIShims
 
 extension SocketAddress {
     var host: String {
@@ -46,16 +47,16 @@ final class MessageHandler: ChannelInboundHandler {
         return header
     }
 
-    func channelActive(ctx: ChannelHandlerContext) {
-        ROS_DEBUG("xmlrpcserver channelActive \(ctx.remoteAddress)")
+    func channelActive(context: ChannelHandlerContext) {
+        ROS_DEBUG("xmlrpcserver channelActive \(String(describing: context.remoteAddress))")
     }
 
-    func channelInactive(ctx: ChannelHandlerContext) {
-        ROS_DEBUG("xmlrpcserver channelInactive \(ctx.remoteAddress)")
+    func channelInactive(context: ChannelHandlerContext) {
+        ROS_DEBUG("xmlrpcserver channelInactive \(String(describing: context.remoteAddress))")
 
     }
 
-    public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+    public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         var reqPart = self.unwrapInboundIn(data)
         guard let str = reqPart.readString(length: reqPart.readableBytes) else {
             return
@@ -66,13 +67,13 @@ final class MessageHandler: ChannelInboundHandler {
         }
 
         let content = String(str[range.upperBound..<str.endIndex])
-        guard let index = content.index(of: "\r\n") else {
+        guard let index = content.firstIndex(of: "\r\n") else {
             fatalError()
         }
-        guard let length = Int(content[content.startIndex..<index]) else {
+        guard let _ = Int(content[content.startIndex..<index]) else {
             fatalError("length error")
         }
-        guard let ind2 = content.index(of: "<") else {
+        guard let ind2 = content.firstIndex(of: "<") else {
             fatalError()
         }
 
@@ -88,12 +89,12 @@ final class MessageHandler: ChannelInboundHandler {
         let response = self.executeMethod(methodName: methodName, params: params)
         let xml = response.toXml()
         let responseXML = self.generateResponse(resultXML: xml)
-        var outbuffer = ctx.channel.allocator.buffer(capacity: responseXML.utf8.count)
-        let written = outbuffer.write(string: responseXML)
+        var outbuffer = context.channel.allocator.buffer(capacity: responseXML.utf8.count)
+        let written = outbuffer.writeString(responseXML)
         assert(written == responseXML.utf8.count)
 
-        ctx.writeAndFlush(self.wrapOutboundOut(outbuffer)).whenFailure { error in
-            ROS_ERROR("write failed to \(ctx.remoteAddress)\nerror: \(error))")
+        context.writeAndFlush(self.wrapOutboundOut(outbuffer)).whenFailure { error in
+            ROS_ERROR("write failed to \(String(describing: context.remoteAddress))\nerror: \(error))")
         }
     }
 
@@ -126,7 +127,7 @@ final class XMLRPCServer {
 
             // Set the handlers that are appled to the accepted Channels
             .childChannelInitializer { channel in
-                channel.pipeline.add(handler: self.handler)
+                channel.pipeline.addHandler(self.handler)
             }
 
             // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels

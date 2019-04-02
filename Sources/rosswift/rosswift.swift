@@ -2,6 +2,7 @@ import Foundation
 import HeliumLogger
 import LoggerAPI
 import NIO
+
 import NIOConcurrencyHelpers
 import RosTime
 import StdMsgs
@@ -141,7 +142,7 @@ public struct Ros {
         return initialize(remappings: remappings, name: name, options: options)
     }
 
-    static let promise: EventLoopPromise<Void> = threadGroup.next().newPromise()
+    static let promise: EventLoopPromise<Void> = threadGroup.next().makePromise()
 
     /// Alternate ROS initialization function.
     ///
@@ -191,7 +192,7 @@ public struct Ros {
         while isRunning {
             _ = RosTime.WallDuration(seconds: 0.05).sleep()
         }
-        promise.succeed(result: Void())
+        promise.succeed(())
     }
 
     private static func kill() {
@@ -342,7 +343,7 @@ public struct Ros {
 
             isStarted = false
             isRunning = false
-            promise.succeed(result: Void())
+            promise.succeed(())
         }
     }
 

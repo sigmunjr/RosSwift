@@ -50,7 +50,7 @@ import StdMsgs
 
             serviceServerLinks.removeAll { links in
                 links.forEach {
-                    $0.channel?.close()
+                    let _ = $0.channel?.close()
                 }
             }
         }
@@ -74,7 +74,7 @@ import StdMsgs
             let uri = "rosrpc://\(Ros.Network.getHost()):\(connectionManager.getTCPPort())"
             let params = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), ops.service, uri, xmlrpcManager.serverURI])
             do {
-                try Master.shared.execute(method: "registerService", request: params).wait()
+                let _ = try Master.shared.execute(method: "registerService", request: params).wait()
             } catch {
                 ROS_ERROR(error.localizedDescription)
             }
@@ -154,7 +154,7 @@ import StdMsgs
                                                requestMd5sum: requestMd5sum,
                                                responseMd5sum: responseMd5sum,
                                                headerValues: headerValues)
-                channel.pipeline.add(handler: client)
+                let _ = channel.pipeline.addHandler(client)
                 client.initialize(channel: channel)
                 return client
             }

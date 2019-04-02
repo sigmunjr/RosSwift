@@ -55,8 +55,13 @@ final class TransportPublisherLink: PublisherLink {
                                      "type": parent.datatype,
                                      "tcp_nodelay": transportHints.getTCPNoDelay() ? "1" : "0"]
 
-        connection.writeHeader(keyVals: header).whenComplete {
-            ROS_DEBUG("TransportPublisherLink: header is written")
+        connection.writeHeader(keyVals: header).whenComplete { result in
+            switch result {
+            case .success:
+                ROS_DEBUG("channel succesfully closed")
+            case .failure(let error):
+                ROS_ERROR("failed to write header: \(error)")
+            }
         }
     }
 

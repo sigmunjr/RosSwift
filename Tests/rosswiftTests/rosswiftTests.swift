@@ -123,25 +123,6 @@ class rosswiftTests: XCTestCase {
             + "<value><array><data><value>TCPROS</value></data></array>"
             + "</value></data></array></value></param></params></methodCall>"
 
-        let xmlproto = "<value><array><data><value><array><data><value>"
-            + "<string>TCPROS</string></value></data></array></value>"
-            + "</data></array></value>"
-
-        let xml2 = """
-        <methodResponse><params><param>
-            <value><array><data><value><i4>1</i4></value><value></value>
-            <value><array><data><value>TCPROS</value><value>B2036.local</value>
-            <value><i4>60331</i4></value></data></array>
-            </value></data></array></value>
-        </param></params></methodResponse>
-        """
-
-        let xml3 = "<methodResponse><params><param><value><array><data>"
-            + "<value><i4>1</i4></value><value>Success</value><value>"
-            + "<array><data/></array></value></data></array></value>"
-            + "</param></params></methodResponse>"
-
-
             let ob = XMLRPCManager.parseRequest(xml: xml)
             XCTAssertEqual(ob.method, "requestTopic")
             XCTAssertEqual(ob.params[0].string, "/matlab_global_node_02713")

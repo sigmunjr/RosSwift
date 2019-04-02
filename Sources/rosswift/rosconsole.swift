@@ -24,7 +24,7 @@ func rosVerbose(_ msg: @autoclosure () -> String,
                 lineNum: Int = #line,
                 fileName: String = #file) {
 
-    Log.verbose(msg, functionName: functionName, lineNum: lineNum, fileName: fileName)
+    Log.verbose(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
 }
 
 func ROS_DEBUG(_ msg: @autoclosure () -> String,
@@ -33,7 +33,7 @@ func ROS_DEBUG(_ msg: @autoclosure () -> String,
                fileName: String = #file) {
 
     #if DEBUG
-    Log.debug(msg, functionName: functionName, lineNum: lineNum, fileName: fileName)
+    Log.debug(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
     #endif
 }
 
@@ -42,7 +42,7 @@ func ROS_INFO(_ msg: @autoclosure () -> String,
 
               lineNum: Int = #line,
               fileName: String = #file) {
-    Log.info(msg, functionName: functionName, lineNum: lineNum, fileName: fileName)
+    Log.info(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
 }
 
 public func ROS_ERROR(_ msg: @autoclosure () -> String,
@@ -50,7 +50,7 @@ public func ROS_ERROR(_ msg: @autoclosure () -> String,
                       lineNum: Int = #line,
                       fileName: String = #file) {
 
-    Log.error(msg, functionName: functionName, lineNum: lineNum, fileName: fileName)
+    Log.error(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
 }
 
 public func ROS_WARNING(_ msg: @autoclosure () -> String,
@@ -58,7 +58,7 @@ public func ROS_WARNING(_ msg: @autoclosure () -> String,
                         lineNum: Int = #line,
                         fileName: String = #file) {
 
-    Log.warning(msg, functionName: functionName, lineNum: lineNum, fileName: fileName)
+    Log.warning(msg(), functionName: functionName, lineNum: lineNum, fileName: fileName)
 }
 
 func ROS_DEBUG_NAMED(_ name: String, _ text: String) {

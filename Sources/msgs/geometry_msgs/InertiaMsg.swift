@@ -1,7 +1,6 @@
 import Foundation
 import StdMsgs
 import RosTime
-import geometry_msgs
 
 extension geometry_msgs {
 /// Mass [kg]

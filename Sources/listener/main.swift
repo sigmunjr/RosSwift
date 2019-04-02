@@ -30,7 +30,7 @@ func chatterCallback(msg: String) {
 
 func chatterCallbackEvent(event: MessageEvent<String>) {
     let msg = event.message
-    print("I got [\(msg) from \(event.connectionHeader["callerid"])")
+    print("I got [\(msg) from \(event.connectionHeader["callerid"] ?? "<no caller id>")")
 }
 
 let future = Ros.initialize(argv: &CommandLine.arguments, name: "listener")

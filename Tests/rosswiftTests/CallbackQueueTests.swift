@@ -40,14 +40,14 @@ class CallbackQueueTests: XCTestCase {
         let queue = CallbackQueue()
 
         queue.addCallback(callback: cb, ownerId: 1)
-        queue.callOne()
+        _ = queue.callOne()
         XCTAssertEqual(cb.count, 1)
 
         queue.addCallback(callback: cb, ownerId: 1)
         queue.callAvailable()
         XCTAssertEqual(cb.count, 2)
 
-        queue.callOne()
+        _ = queue.callOne()
         XCTAssertEqual(cb.count, 2)
 
         queue.callAvailable()
@@ -72,7 +72,7 @@ class CallbackQueueTests: XCTestCase {
         }
 
         for i in 1...1000 {
-            queue.callOne()
+            _ = queue.callOne()
             XCTAssertEqual(cb.count, i)
         }
     }
@@ -119,7 +119,7 @@ class CallbackQueueTests: XCTestCase {
         queue.addCallback(callback: cb2, ownerId: 1)
         queue.addCallback(callback: cb2, ownerId: 1)
 
-        queue.callOne()
+        _ = queue.callOne()
 
         queue.addCallback(callback: cb2, ownerId: 1)
 
@@ -147,7 +147,7 @@ class CallbackQueueTests: XCTestCase {
                 if useAvailable {
                     queue.callAvailable()
                 } else {
-                    queue.callOne()
+                _ = queue.callOne()
                 }
             }
             return .success
@@ -175,7 +175,7 @@ class CallbackQueueTests: XCTestCase {
         queue.addCallback(callback: cb, ownerId: 1)
         queue.addCallback(callback: cb, ownerId: 1)
         queue.addCallback(callback: cb, ownerId: 1)
-        queue.callOne()
+        _ = queue.callOne()
         XCTAssertEqual(cb.count, 3)
 
     }
@@ -186,7 +186,7 @@ class CallbackQueueTests: XCTestCase {
         queue.addCallback(callback: cb, ownerId: 1)
         queue.addCallback(callback: cb, ownerId: 1)
         queue.addCallback(callback: cb, ownerId: 1)
-        queue.callOne()
+        _ = queue.callOne()
         XCTAssertEqual(cb.count, 3)
 
     }

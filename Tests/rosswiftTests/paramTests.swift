@@ -49,7 +49,7 @@ class paramTests: XCTestCase {
 
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
-        Ros.initialize(argv: &CommandLine.arguments, name: "paramTests")
+        let _ = Ros.initialize(argv: &CommandLine.arguments, name: "paramTests")
         Ros.Param.set("string", "test")
         Ros.Param.set("int", Int(10))
         Ros.Param.set("double", Double(10.5))
@@ -118,7 +118,6 @@ class paramTests: XCTestCase {
         Ros.Param.set(ns + "/foo", "b")
         XCTAssert(Ros.Param.getCached(ns + "/foo", &stringParam))
         XCTAssertEqual("b", stringParam)
-        Ros.Param.getCached(ns, &structParam)
         XCTAssert(Ros.Param.getCached(ns, &structParam))
         XCTAssert(structParam.hasMember("foo"))
         XCTAssertEqual("b", structParam["foo"]?.string)

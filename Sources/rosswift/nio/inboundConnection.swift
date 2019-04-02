@@ -42,7 +42,7 @@ final class InboundConnection: ConnectionProtocol {
             // Enable SO_REUSEADDR.
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
-                channel.pipeline.add(handler: InboundHandler(parent: self))
+                channel.pipeline.addHandler(InboundHandler(parent: self))
         }
 
         do {
@@ -69,12 +69,12 @@ final class InboundConnection: ConnectionProtocol {
     func write(buffer: [UInt8]) -> EventLoopFuture<Void> {
         guard let channel = channel else {
             ROS_ERROR("connection dropped")
-            let promise: EventLoopPromise<Void> = threadGroup.next().newPromise()
-            promise.fail(error: ConnectionError.connectionDropped)
+            let promise: EventLoopPromise<Void> = threadGroup.next().makePromise()
+            promise.fail(ConnectionError.connectionDropped)
             return promise.futureResult
         }
         var buf = channel.allocator.buffer(capacity: buffer.count)
-        buf.write(bytes: buffer)
+        buf.writeBytes(buffer)
         return channel.writeAndFlush(buf)
     }
 
@@ -87,8 +87,13 @@ final class InboundConnection: ConnectionProtocol {
     func drop(reason: DropReason) {
         if dropped.compareAndExchange(expected: false, desired: true) {
             ROS_DEBUG("Connection::drop - \(reason)")
-            channel?.close().whenComplete {
-                ROS_DEBUG("channel closed")
+            channel?.close().whenComplete { res in
+                switch res {
+                case .success:
+                    ROS_DEBUG("channel succesfully closed")
+                case .failure(let error):
+                    ROS_ERROR("channel closed with error: \(error)")
+                }
             }
             channel = nil
             link = nil
@@ -117,12 +122,12 @@ final class InboundConnection: ConnectionProtocol {
             parent.handler = self
         }
 
-        func channelInactive(ctx: ChannelHandlerContext) {
+        func channelInactive(context: ChannelHandlerContext) {
             ROS_DEBUG("InboundHandler inactive")
             parent?.drop(reason: .transportDisconnect)
         }
 
-        func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+        func channelRead(context: ChannelHandlerContext, data: NIOAny) {
 
             var buffer = self.unwrapInboundIn(data)
             guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
@@ -130,7 +135,7 @@ final class InboundConnection: ConnectionProtocol {
             }
             if len > buffer.readableBytes {
                 ROS_ERROR("Received length \(buffer.readableBytes) < \(len) [\(self.parent?.remoteAddress ?? "uknown host")]")
-                _ = ctx.close()
+                _ = context.close()
             }
 
             guard let p = parent, let link = parent?.link else {
@@ -155,7 +160,8 @@ final class InboundConnection: ConnectionProtocol {
             } else if let rawMessage = buffer.readBytes(length: Int(len)) {
                 let m = SerializedMessage(buffer: rawMessage)
                 if let sub = p.parent {
-                    let drops = sub.handle(message: m,
+                    // FIXME: Handle drop statistics
+                    _ = sub.handle(message: m,
                                            connectionHeader: link.header!.getValues(),
                                            link: link)
                 }

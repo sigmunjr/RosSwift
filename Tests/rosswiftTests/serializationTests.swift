@@ -66,11 +66,14 @@ class serializationTests: XCTestCase {
     }
 
     func testBuiltinTypes() {
-        Ros.initialize(argv: &CommandLine.arguments, name: "builtinTests")
+        let _ = Ros.initialize(argv: &CommandLine.arguments, name: "builtinTests")
         let n = Ros.NodeHandle()
         let p1 = n.advertise(topic: "test_bool", message: Bool.self)
+        XCTAssertNotNil(p1)
         let p2 = n.advertise(topic: "test_int", message: Int32.self)
+        XCTAssertNotNil(p2)
         let p3 = n.advertise(topic: "test_double", message: Double.self)
+        XCTAssertNotNil(p3)
 
 
 

@@ -26,7 +26,7 @@ class serviceTests: XCTestCase {
     override func setUp() {
         print("##########  SETUP ##############")
         // Put setup code here. This method is called before the invocation of each test method in the class.
-        Ros.initialize(argv: &CommandLine.arguments, name: "serviceTests")
+        let _ = Ros.initialize(argv: &CommandLine.arguments, name: "serviceTests")
 
     }
 
@@ -64,7 +64,7 @@ class serviceTests: XCTestCase {
     }
 
     func testCallEcho() {
-        let nh = Ros.NodeHandle()
+        let _ = Ros.NodeHandle()
 
         var req = TestStringString.Request()
         var res = TestStringString.Response()
@@ -88,6 +88,7 @@ class serviceTests: XCTestCase {
         var t = TestStringString()
 
         let srv1 = n.advertiseService(service: "/test_srv", srvFunc: serviceCallback)
+        XCTAssertNotNil(srv1)
         XCTAssert(Service.call(name: "/test_srv", service: &t))
         XCTAssertEqual(t.response.data, "test")
 
@@ -147,17 +148,14 @@ class serviceTests: XCTestCase {
     func testCallSrvMultipleTimes() {
 
         let node = Ros.NodeHandle()
-        guard let serv = node.advertiseService(service: "/service_adv2", srvFunc: srvCallback) else {
-            XCTFail()
-            return
-        }
-
+        let serv = node.advertiseService(service: "/service_adv2", srvFunc: srvCallback)
+        XCTAssertNotNil(serv)
         var req = TestStringString.Request()
         var res = TestStringString.Response()
         req.data = "case_FLIP"
 
 //        self.measure {
-            for i in 0..<10 {
+            for _ in 0..<10 {
                 XCTAssert(Service.call(serviceName: "service_adv2", req: req, response: &res))
             }
 //        }

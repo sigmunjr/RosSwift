@@ -7,31 +7,33 @@
 
 import Foundation
 import NIO
+
 import BinaryCoder
 
 extension Nio {
 
     final class MessageDelimiterCodec: ByteToMessageDecoder {
-        public typealias InboundIn = ByteBuffer
-        public typealias InboundOut = ByteBuffer
+        typealias InboundIn = ByteBuffer
+        typealias InboundOut = ByteBuffer
 
         public var cumulationBuffer: ByteBuffer?
 
-        public func decode(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+        func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
             if let count: UInt32 = buffer.getInteger(at: buffer.readerIndex, endianness: .little) {
                 if buffer.readableBytes >= count + 4 {
-                    ctx.fireChannelRead(self.wrapInboundOut(buffer.readSlice(length: Int(count + 4))!))
+                    context.fireChannelRead(self.wrapInboundOut(buffer.readSlice(length: Int(count + 4))!))
                     return .continue
                 }
             }
-            ROS_DEBUG("MessageDelimiterCodec from \(ctx.channel.remoteAddress) => \(ctx.channel.localAddress) need more data")
+            ROS_DEBUG("MessageDelimiterCodec from \(String(describing: context.channel.remoteAddress)) => \(String(describing: context.channel.localAddress)) need more data")
             return .needMoreData
         }
 
-        func decodeLast(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+        func decodeLast(context: ChannelHandlerContext, buffer: inout ByteBuffer, seenEOF: Bool) throws -> DecodingState {
             self.cumulationBuffer = nil
             return .continue
         }
+
     }
 
     final class HeaderMessageCodec: ByteToMessageDecoder {
@@ -40,7 +42,7 @@ extension Nio {
 
         public var cumulationBuffer: ByteBuffer?
 
-        public func decode(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+        func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
             guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
                 fatalError()
             }
@@ -59,7 +61,7 @@ extension Nio {
                     return .continue
                 }
 
-                guard let eq = line.index(of: "=") else {
+                guard let eq = line.firstIndex(of: "=") else {
                     ROS_DEBUG("Received an invalid TCPROS header.  Each line must have an equals sign.")
                     return .continue
                 }
@@ -68,11 +70,11 @@ extension Nio {
                 readMap[key] = value
             }
 
-            ctx.fireChannelRead(self.wrapInboundOut(readMap))
+            context.fireChannelRead(self.wrapInboundOut(readMap))
             return .continue
         }
 
-        func decodeLast(ctx: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+        func decodeLast(context: ChannelHandlerContext, buffer: inout ByteBuffer, seenEOF: Bool) throws -> DecodingState {
             self.cumulationBuffer = nil
             return .continue
         }
@@ -91,7 +93,7 @@ extension Nio {
                 self.callback = callback
             }
 
-            public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+            public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
                 let buffer = self.unwrapInboundIn(data)
                 callback(buffer)
             }
@@ -103,7 +105,7 @@ extension Nio {
         public init(pipeline: [ChannelHandler]) {
             self.bootstrap = ClientBootstrap(group: threadGroup.next())
                 .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
-                .channelInitializer { $0.pipeline.addHandlers(pipeline, first: true) }
+                .channelInitializer { $0.pipeline.addHandlers(pipeline) }
         }
 
         public func connect(host: String, port: Int) -> EventLoopFuture<Channel> {

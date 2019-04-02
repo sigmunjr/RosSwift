@@ -203,7 +203,7 @@ final class Subscription {
 
     func remove(callback: SubscriptionCallbackHelper) {
         callbacksQueue.sync {
-            if let index = callbacks.index(where: { $0.helper.id == callback.id }) {
+            if let index = callbacks.firstIndex(where: { $0.helper.id == callback.id }) {
                 callbacks.remove(at: index)
             }
         }

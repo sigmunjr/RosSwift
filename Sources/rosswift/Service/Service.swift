@@ -99,8 +99,8 @@ public struct Service {
         var port: UInt16 = 0
         if ServiceManager.instance.lookupService(name: mappedName, servHost: &host, servPort: &port) {
             let keymap = ["probe": "1", "md5sum": "*", "callerid": Ros.ThisNode.getName(), "service": mappedName]
-            let transport = Nio.TransportTCP(pipeline: [Nio.MessageDelimiterCodec(),
-                                                        Nio.HeaderMessageCodec(),
+            let transport = Nio.TransportTCP(pipeline: [ByteToMessageHandler(Nio.MessageDelimiterCodec()),
+                                                        ByteToMessageHandler(Nio.HeaderMessageCodec()),
                                                         Nio.TransportTCP.Handler(callback: callback)])
             do {
 

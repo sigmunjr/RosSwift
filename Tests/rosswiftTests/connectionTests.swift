@@ -15,7 +15,7 @@ class connectionTests: XCTestCase {
 
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
-        Ros.initialize(argv: &CommandLine.arguments, name: "connectionTests")
+        _ = Ros.initialize(argv: &CommandLine.arguments, name: "connectionTests")
 
     }
 
@@ -36,16 +36,16 @@ class connectionTests: XCTestCase {
     func testNodeHandleConstructionDestruction() {
         do {
             XCTAssertFalse(Ros.isStarted)
-            let n1 = Ros.NodeHandle()
+            let _ = Ros.NodeHandle()
             XCTAssert(Ros.isStarted)
             do {
-                let n2 = Ros.NodeHandle()
+                let _ = Ros.NodeHandle()
                 XCTAssert(Ros.isStarted)
                 do {
-                    let n3 = Ros.NodeHandle()
+                    let _ = Ros.NodeHandle()
                     XCTAssert(Ros.isStarted)
                     do {
-                        let n4 = Ros.NodeHandle()
+                        let _ = Ros.NodeHandle()
                         XCTAssert(Ros.isStarted)
                     }
                 }
@@ -55,7 +55,7 @@ class connectionTests: XCTestCase {
         XCTAssertFalse(Ros.isStarted)
         sleep(1)
         do {
-            let n = Ros.NodeHandle()
+            let _ = Ros.NodeHandle()
             XCTAssert(Ros.isStarted)
         }
         sleep(1)
@@ -75,6 +75,7 @@ class connectionTests: XCTestCase {
             chatter = msg.data
         }
         let vab = n.subscribe(topic: "/intrachatter", queueSize: 1, callback: chatterCallback)
+        XCTAssertNotNil(vab)
 
         chatter_pub.publish(message: std_msgs.float64(10.0))
         usleep(100000)
@@ -157,7 +158,7 @@ class connectionTests: XCTestCase {
         do {
             let helper = SubscribeHelper()
             let sub_class = n.subscribe(topic: "test", queueSize: 0, callback: helper.callback)
-
+            XCTAssertNotNil(sub_class)
             let d = RosTime.Duration(milliseconds: 50)
             var last_class_count = helper.recv_count_
             while last_class_count == helper.recv_count_ {
@@ -169,6 +170,7 @@ class connectionTests: XCTestCase {
             var last_fn_count = g_recv_count
             do {
                 let sub_fn = n.subscribe(topic: "test", queueSize: 0, callback: subscriberCallback)
+                XCTAssertNotNil(sub_fn)
                 last_fn_count = g_recv_count
                 while last_fn_count == g_recv_count {
                     pub.publish(message: msg)
