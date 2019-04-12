@@ -29,6 +29,7 @@ final class ConnectionHandler: ChannelInboundHandler {
         context.fireChannelInactive()
     }
 
+
     enum State {
         case header
         case serviceCall
@@ -124,7 +125,6 @@ final class ConnectionHandler: ChannelInboundHandler {
                     context.close(promise: nil)
                 }
             }
-            state = .header
         }
 
     }

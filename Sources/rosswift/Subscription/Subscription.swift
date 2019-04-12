@@ -40,15 +40,15 @@ final class Subscription {
         let receiptTime: RosTime.Time
     }
 
-    var datatype: String
+    let datatype: String
     var md5sum: String
-    var name: String
+    let name: String
     var callbacks = [CallBackInfo]()
-    var dropped = Atomic<Bool>(value: false)
-    var isShuttingDown = Atomic<Bool>(value: false)
-    var publisherLinks = SynchronizedArray<PublisherLink>()
-    var transportHints = TransportHints()
-    var statistics: StatisticLogger?
+    let dropped = Atomic<Bool>(value: false)
+    let isShuttingDown = Atomic<Bool>(value: false)
+    let publisherLinks = SynchronizedArray<PublisherLink>()
+    let transportHints: TransportHints
+    let statistics: StatisticLogger?
     let md5sumQueue = DispatchQueue(label: "md5sumQueue")
     let callbacksQueue = DispatchQueue(label: "callbacksQueue")
     var latchedMessages = [ObjectIdentifier: LatchInfo]()
@@ -58,6 +58,7 @@ final class Subscription {
         self.datatype = datatype
         self.md5sum = md5sum
         self.transportHints = transportHints
+        self.statistics = nil
     }
 
     func shutdown() {

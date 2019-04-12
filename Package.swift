@@ -29,7 +29,7 @@ let package = Package(
     ],
     targets: [
         .target( name: "RosSwift",
-                 dependencies: ["StdMsgs","RosTime","BinaryCoder","NIO","HeliumLogger","Deque"],
+                 dependencies: ["StdMsgs","RosTime","BinaryCoder","NIO","NIOHTTP1","HeliumLogger","Deque"],
                  path: "Sources/rosswift"),
         .target( name: "publisher",
                  dependencies: ["RosSwift","geometry_msgs","StdMsgs"]),

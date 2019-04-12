@@ -86,13 +86,14 @@ final class InboundConnection: ConnectionProtocol {
 
     func drop(reason: DropReason) {
         if dropped.compareAndExchange(expected: false, desired: true) {
+            let remote = self.remoteAddress
             ROS_DEBUG("Connection::drop - \(reason)")
             channel?.close().whenComplete { res in
                 switch res {
                 case .success:
-                    ROS_DEBUG("channel succesfully closed")
+                    ROS_DEBUG("InboundConnection channel to \(remote) succesfully closed")
                 case .failure(let error):
-                    ROS_ERROR("channel closed with error: \(error)")
+                    ROS_ERROR("InboundConnection channel to \(remote) closed with error: \(error)")
                 }
             }
             channel = nil

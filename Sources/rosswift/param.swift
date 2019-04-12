@@ -17,7 +17,7 @@ public struct Param {
     static var gSubscribedParameters = Set<String>()
     static var gParameters = ParameterStorage()
 
-    static func set<T>(_ key: String, _ value: T) {
+    public static func set<T>(_ key: String, _ value: T) {
         let mappedKey = Names.resolve(name: key)
         let v = XmlRpcValue(any: value)
         let params = XmlRpcValue(anyArray: [ThisNode.getName(), mappedKey, v])
@@ -33,7 +33,7 @@ public struct Param {
         }
     }
 
-    static func has(key: String) -> Bool {
+    public static func has(key: String) -> Bool {
         let params = XmlRpcValue(anyArray: [ThisNode.getName(), Names.resolve(name: key)])
 
         // We don't loop here, because validateXmlrpcResponse() returns false
@@ -208,7 +208,7 @@ public struct Param {
 
     static func update(key: String, value: XmlRpcValue) {
         let cleanKey = Names.clean(key)
-        ROS_DEBUG("cached_parameters: Received parameter update for key [\(cleanKey)]")
+        ROS_DEBUG("cached_parameters: Received parameter update for key [\(cleanKey)] new value: [\(value)]")
 
         parameterQueue.async {
             if gSubscribedParameters.contains(cleanKey) {

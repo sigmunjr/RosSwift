@@ -59,8 +59,10 @@ func caseFlip(req: TestStringString.Request) -> TestStringString.Response? {
 
 func echo(req: TestStringString.Request) -> TestStringString.Response? {
     // copy over the request and overwrite the letters with their case-flip
-    print("echo")
-    return TestStringString.Response(req.data)
+
+    let response = req.data.uppercased()
+
+    return TestStringString.Response(response)
 }
 
 let future = Ros.initialize(argv: &CommandLine.arguments, name: "talker")
@@ -121,6 +123,11 @@ do {
 } catch {
     print("no response: \(error)")
 }
+
+var parameter: Int = 0
+
+Ros.Param.getCached("int", &parameter)
+Ros.Param.set("~parm", ["T":34.3,"I":45.0,"D":0.34])
 
 var rate = RosTime.Rate(frequency: 1.0)
 

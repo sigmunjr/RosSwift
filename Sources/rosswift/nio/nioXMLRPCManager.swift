@@ -21,7 +21,6 @@ final class XMLRPCManager {
 
     static let instance = XMLRPCManager()
 
-    var handler: MessageHandler?
     var functions = [String: FunctionInfo]()
     var server = XMLRPCServer(group: threadGroup)
     var isUnbindRequested = false

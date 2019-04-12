@@ -40,9 +40,9 @@ extension Ros {
                 return false
             }
 
-            for (i, c) in name.enumerated() {
+            for (i, c) in name.dropFirst().enumerated() {
                 if !isValidCharInName(c) {
-                    error = "Character [\(c)] at element [\(i)] is not valid " +
+                    error = "Character [\(c)] at element [\(i+1)] is not valid " +
                             "in Graph Resource Name [\(name)]. " +
                             "Valid characters are a-z, A-Z, 0-9, / and _."
 

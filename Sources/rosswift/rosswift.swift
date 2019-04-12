@@ -239,9 +239,7 @@ public struct Ros {
             rosoutAppender = appender
         }
 
-        _ = ServiceManager.instance.advertiseService(.init(service: "~debug/close_all_connections",
-                                                           callback: closeAllConnections))
-        _ = ServiceManager.instance.advertiseService(.init(service: "~set_logger_level",
+        _ = ServiceManager.instance.advertiseService(.init(service: Names.resolve(name: "~set_logger_level"),
                                                            callback: setLoggerLevel))
 
         if isShuttingDown.load() {
@@ -251,7 +249,7 @@ public struct Ros {
         if let enableDebug = ProcessInfo.processInfo.environment["ROSCPP_ENABLE_DEBUG"],
             enableDebug.lowercased() == "true" || enableDebug == "1" {
 
-            _ = ServiceManager.instance.advertiseService(.init(service: "~debug/close_all_connections",
+            _ = ServiceManager.instance.advertiseService(.init(service: Names.resolve(name: "~debug/close_all_connections"),
                                                                    callback: closeAllConnections))
         }
 

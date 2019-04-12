@@ -239,11 +239,7 @@ extension Ros {
                 options.callbackQueue = getCallbackQueue()
             }
             if ServiceManager.instance.advertiseService(options) {
-                let srv = ServiceServer(service: options.service, node: self)
-                if srv.implementation == nil {
-                    ROS_ERROR("invalid service server")
-                }
-                return srv
+                return ServiceServer(service: options.service, node: self)
             }
             return nil
         }

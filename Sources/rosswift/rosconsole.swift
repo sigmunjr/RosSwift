@@ -105,6 +105,10 @@ extension Ros {
             }
         }
 
+        static func setLoggerLevel(logger: String, level: LoggerMessageType) {
+            ROS_INFO("setLoggerLevel not implemented")
+        }
+
     }
 
 }

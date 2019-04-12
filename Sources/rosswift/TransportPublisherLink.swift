@@ -58,7 +58,7 @@ final class TransportPublisherLink: PublisherLink {
         connection.writeHeader(keyVals: header).whenComplete { result in
             switch result {
             case .success:
-                ROS_DEBUG("channel succesfully closed")
+                ROS_DEBUG("Header written for topic \(self.parent.name)")
             case .failure(let error):
                 ROS_ERROR("failed to write header: \(error)")
             }

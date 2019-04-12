@@ -38,6 +38,17 @@ let future = Ros.initialize(argv: &CommandLine.arguments, name: "listener")
 
 let n = Ros.NodeHandle()
 
+let request = TestStringString.Request("request from listener")
+do {
+    if let respons : TestStringString.Response = try Service.call(serviceName: "echo", req: request).wait() {
+        print(respons)
+    } else {
+        print("call returned nil")
+    }
+} catch {
+    print("no response: \(error)")
+}
+
 let a = A(value: 345)
 let b = B(value: 99.345)
 

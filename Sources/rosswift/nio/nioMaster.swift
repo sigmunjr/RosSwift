@@ -8,7 +8,7 @@
 import Foundation
 import NIO
 
-let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 
 struct TopicInfo {
     let name: String
@@ -285,6 +285,7 @@ struct XMLRPCClient {
 
         enum MasterError: Error {
             case invalidResponse(String)
+            case writeError(String)
         }
 
         func execute(method: String, request: XmlRpcValue, host: String, port: UInt16) -> EventLoopFuture<XmlRpcValue> {
@@ -300,6 +301,7 @@ struct XMLRPCClient {
                 buffer.writeString(xml)
                 _ = channel.writeAndFlush(buffer).whenFailure { error in
                     ROS_ERROR("write failed to \(channel.remoteAddress!) [\(error)]")
+                    promise.fail(MasterError.writeError("write failed to \(channel.remoteAddress!) [\(error)]"))
                 }
                 channel.closeFuture.whenComplete { result in
                     // FIXME: check result 
@@ -320,7 +322,8 @@ struct XMLRPCClient {
                 }
             }.whenFailure { error in
                 ROS_ERROR(error.localizedDescription)
-            }
+                promise.fail(error)
+           }
             return promise.futureResult
 
         }
