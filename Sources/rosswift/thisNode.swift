@@ -25,12 +25,12 @@ extension Ros {
             return instance.namespace
         }
 
-        class func getAdvertisedTopics(topics: inout [String]) {
-            TopicManager.instance.getAdvertised(topics: &topics)
+        class func getAdvertisedTopics() -> [String] {
+            return TopicManager.instance.getAdvertised()
         }
 
-        class func getSubscribedTopics(topics: inout [String]) {
-            TopicManager.instance.getSubscribed(topics: &topics)
+        class func getSubscribedTopics(topics: inout [String]) -> [String] {
+            return TopicManager.instance.getSubscribed()
         }
 
         class func initialize(name: String, remappings: StringStringMap, options: InitOption) {

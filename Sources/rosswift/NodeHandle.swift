@@ -89,7 +89,7 @@ extension Ros {
                                                 trackedObject: options.trackedObject)
 
             if TopicManager.instance.advertise(ops: options, callbacks: callbacks) {
-                return SpecializedPublisher(topic: options.topic, message: M.self, node: self, callbacks: callbacks)
+                return SpecializedPublisher(topic: options.topic, message: M.self, callbacks: callbacks)
             }
 
             return nil

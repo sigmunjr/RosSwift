@@ -155,9 +155,11 @@ struct XMLRPCClient {
             }
 
             // Split URI into
-            if !Ros.Network.splitURI(uri: masterURI!, host: &masterHost, port: &masterPort) {
+            guard let master = Ros.Network.splitURI(uri: masterURI!) else {
                 fatalError( "Couldn't parse the master URI [\(masterURI!)] into a host:port pair.")
             }
+            masterHost = master.host
+            masterPort = master.port
             ROS_DEBUG("master on host: \(masterHost), port: \(masterPort)")
         }
 

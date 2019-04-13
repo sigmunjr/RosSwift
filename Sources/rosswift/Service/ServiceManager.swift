@@ -66,7 +66,6 @@ import StdMsgs
             }
 
             let pub = ServicePublication(name: ops.service,
-                                         helper: ops.helper,
                                          trackedObject: ops.trackedObject,
                                          callback: ops.callback)
             servicePublications.append(pub)
@@ -140,15 +139,13 @@ import StdMsgs
                 return nil
             }
 
-            var servPort: UInt16 = 0
-            var servHost = ""
-            guard lookupService(name: service, servHost: &servHost, servPort: &servPort) else {
+            guard let server = lookupService(name: service) else {
                 return nil
             }
 
             let trans = Nio.TransportTCP(pipeline: [])
 
-            let c = trans.connect(host: servHost, port: Int(servPort)).map { channel -> ServiceServerLink in
+            let c = trans.connect(host: server.host, port: Int(server.port)).map { channel -> ServiceServerLink in
                 let client = ServiceServerLink(serviceName: service,
                                                persistent: persistent,
                                                requestMd5sum: requestMd5sum,
@@ -174,33 +171,32 @@ import StdMsgs
             }
         }
 
-        func lookupService(name: String, servHost: inout String, servPort: inout UInt16) -> Bool {
+        func lookupService(name: String) -> (host: String, port: UInt16)? {
             let args = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), name])
             do {
                 let payload = try Master.shared.execute(method: "lookupService", request: args).wait()
                 guard payload.valid() else {
                     ROS_DEBUG("lookupService: Invalid server URI returned from master")
-                    return false
+                    return nil
                 }
 
                 let servURI = payload.string
                 if servURI.isEmpty {
                     ROS_DEBUG("lookupService: Empty server URI returned from master")
-                    return false
+                    return nil
                 }
 
-                if !Ros.Network.splitURI(uri: servURI, host: &servHost, port: &servPort) {
+                guard let server = Ros.Network.splitURI(uri: servURI) else {
                     ROS_DEBUG("lookupService: Bad service uri [\(servURI)]")
-
-                    return false
+                    return nil
                 }
 
-                return true
+                return server
 
             } catch {
                 ROS_ERROR("lookupService: \(error)")
             }
 
-            return false
+            return nil
         }
     }

@@ -96,16 +96,14 @@ public struct Service {
 
     static func exists(serviceName: String, printFailureReason: Bool) -> Bool {
         let mappedName = Ros.Names.resolve(name: serviceName)
-        var host = ""
-        var port: UInt16 = 0
-        if ServiceManager.instance.lookupService(name: mappedName, servHost: &host, servPort: &port) {
+        if let server = ServiceManager.instance.lookupService(name: mappedName) {
             let keymap = ["probe": "1", "md5sum": "*", "callerid": Ros.ThisNode.getName(), "service": mappedName]
             let transport = Nio.TransportTCP(pipeline: [ByteToMessageHandler(Nio.MessageDelimiterCodec()),
                                                         ByteToMessageHandler(Nio.HeaderMessageCodec()),
                                                         Nio.TransportTCP.Handler(callback: callback)])
             do {
 
-            try transport.connect(host: host, port: Int(port)).map { channel -> Void in
+            try transport.connect(host: server.host, port: Int(server.port)).map { channel -> Void in
                 let buffer = Header.write(keyVals: keymap)
                 do {
                     let sizeBuffer = try BinaryEncoder.encode(UInt32(buffer.count))

@@ -243,7 +243,7 @@ final class XMLRPCServer {
         do {
             let host = Ros.Network.getHost()
             channel = try boot?.bind(host: host, port: port).wait()
-            let p = channel?.localAddress?.port!
+            let p = channel?.localAddress?.port ?? 0
             ROS_DEBUG("Service up and running on \(host):\(p)")
         } catch {
             ROS_ERROR("bind failed to [\(Ros.Network.getHost())], \(error)")

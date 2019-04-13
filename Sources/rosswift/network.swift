@@ -36,7 +36,7 @@ extension Ros {
             }
         }
 
-        static func splitURI(uri: String, host: inout String, port: inout UInt16) -> Bool {
+        static func splitURI(uri: String) -> (host: String, port: UInt16)? {
             var uri = uri
             if uri.hasPrefix("http://") {
                 uri = String(uri.dropFirst(7))
@@ -46,7 +46,7 @@ extension Ros {
 
             let parts = uri.components(separatedBy: ":")
             guard parts.count == 2 else {
-                return false
+                return nil
             }
             var portString = parts[1]
 
@@ -54,12 +54,10 @@ extension Ros {
             portString = segs[0]
 
             guard let portNr = UInt16(portString) else {
-                return false
+                return nil
             }
 
-            port = portNr
-            host = parts[0]
-            return true
+            return (parts[0], portNr)
         }
 
         static func getTCPROSPort() -> UInt16 {

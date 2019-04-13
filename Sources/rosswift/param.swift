@@ -71,7 +71,7 @@ public struct Param {
         return false
     }
 
-    static func getImpl(key: String, value: inout XmlRpcValue, useCache: Bool) -> Bool {
+    static func getImpl(key: String, useCache: Bool) -> XmlRpcValue? {
         var mappedKey = Names.resolve(name: key)
         if mappedKey.isEmpty {
             mappedKey = "/"
@@ -79,21 +79,18 @@ public struct Param {
 
         var useCache = useCache
         var doReturn = false
-        var ret = true
+        var value: XmlRpcValue?
 
         if useCache {
             parameterQueue.sync {
                 if gSubscribedParameters.contains(mappedKey) {
                     if let it = gParameters[mappedKey] {
+                        doReturn = true
                         if it.valid() {
                             ROS_DEBUG("cached_parameters: Using cached parameter value for key [\(mappedKey)]")
                             value = it
-                            doReturn = true
-                            ret = true
                         } else {
                             ROS_DEBUG("cached_parameters: Cached parameter is invalid for key [\(mappedKey)]")
-                            doReturn = true
-                            ret = false
                         }
                     }
                 } else {
@@ -117,7 +114,7 @@ public struct Param {
         }
 
         if doReturn {
-            return ret
+            return value
         }
 
         let params = XmlRpcValue(anyArray: [ThisNode.getName(), mappedKey])
@@ -130,21 +127,20 @@ public struct Param {
             }
             if useCache {
                 parameterQueue.sync {
-                    ROS_DEBUG("cached_parameters: Caching parameter [\(mappedKey)] with value type [\(value.getType())]")
+                    ROS_DEBUG("cached_parameters: Caching parameter [\(mappedKey)] with value type [\(value?.getType())]")
                     gParameters[mappedKey] = value
                 }
             }
         } catch {
             ROS_ERROR("\(error)")
-            ret = false
+            return nil
         }
 
-        return ret
+        return value
     }
 
     public static func get<T>(_ key: String, _ value: inout T) -> Bool {
-        var v = XmlRpcValue()
-        if getImpl(key: key, value: &v, useCache: false) {
+        if let v = getImpl(key: key, useCache: false) {
             if T.self == XmlRpcValue.self {
                 value = v as! T
                 return true
@@ -157,8 +153,7 @@ public struct Param {
     }
 
     public static func get(_ key: String, _ value: inout Int) -> Bool {
-        var v = XmlRpcValue()
-        if getImpl(key: key, value: &v, useCache: false) {
+        if let v = getImpl(key: key, useCache: false) {
             switch v.value {
             case .int(let i):
                 value = i
@@ -182,8 +177,7 @@ public struct Param {
     }
 
     public static func getCached<T>(_ key: String, _ value: inout T) -> Bool {
-        var v = XmlRpcValue()
-        if getImpl(key: key, value: &v, useCache: true) {
+        if let v = getImpl(key: key, useCache: true) {
             if T.self == XmlRpcValue.self {
                 value = v as! T
                 return true

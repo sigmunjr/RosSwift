@@ -163,20 +163,17 @@ extension Ros {
         }
 
         func getBusInfoCallback(params: XmlRpcValue ) -> XmlRpcValue {
-            var response = XmlRpcValue()
-            getBusInfo(info: &response)
+            var response = getBusInfo()
             return XmlRpcValue(anyArray: [1, "", response])
         }
 
         func getSubscriptionsCallback(params: XmlRpcValue ) -> XmlRpcValue {
-            var response = XmlRpcValue()
-            getSubscriptions(subs: &response)
+            let response = getSubscriptions()
             return XmlRpcValue(anyArray: [1, "", response])
         }
 
         func getPublicationsCallback(params: XmlRpcValue ) -> XmlRpcValue {
-            var response = XmlRpcValue()
-            getPublications(pubs: &response)
+            let response = getPublications()
             return XmlRpcValue(anyArray: [1, "", response])
         }
 
@@ -184,7 +181,7 @@ extension Ros {
             ROS_ERROR("getBusStats not implemented")
         }
 
-        func getBusInfo(info: inout XmlRpcValue) {
+        func getBusInfo() -> XmlRpcValue {
             var busInfo = [XmlRpcValue]()
             advertisedTopicsMutex.sync {
                 advertisedTopics.forEach({ pub in
@@ -198,18 +195,21 @@ extension Ros {
                 })
             }
 
-            info.value = .array(busInfo)
+            return XmlRpcValue(array: busInfo)
         }
 
-        func getSubscriptions(subs: inout XmlRpcValue) {
-            ROS_ERROR("getSubscriptions not implemented")
+        func getSubscriptions() -> XmlRpcValue {
+            let topics = subscriptions.map { sub -> XmlRpcValue in
+                XmlRpcValue(anyArray: [sub.name, sub.datatype])
+            }
+            return XmlRpcValue(anyArray: topics)
         }
 
-        func getPublications(pubs: inout XmlRpcValue) {
+        func getPublications() -> XmlRpcValue {
             let topics = advertisedTopics.map { pub -> XmlRpcValue in
                 XmlRpcValue(anyArray: [pub.name, pub.datatype])
             }
-            pubs = XmlRpcValue(anyArray: topics)
+            return XmlRpcValue(anyArray: topics)
         }
 
         func pubUpdate(topic: String, pubs: [String]) -> Bool {
@@ -239,15 +239,15 @@ extension Ros {
             }
         }
 
-        func getAdvertised(topics: inout [String]) {
-            advertisedTopicsMutex.sync {
-                topics = advertisedTopicNames.all()
+        func getAdvertised() -> [String] {
+            return advertisedTopicsMutex.sync {
+                return advertisedTopicNames.all()
             }
         }
 
-        func getSubscribed(topics: inout [String]) {
-            subsQueue.sync {
-                topics = subscriptions.map { $0.name }
+        func getSubscribed() -> [String] {
+            return subsQueue.sync {
+                return subscriptions.map { $0.name }
             }
         }
 
