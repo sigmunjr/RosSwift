@@ -6,13 +6,8 @@
 //
 
 import BinaryCoder
-import Foundation
 import StdMsgs
 import RosTime
-
-public struct SubscriptionCallbackHelperCallParams<M: Message> {
-    var event: MessageEvent<M>
-}
 
 public protocol SubscriptionCallbackHelper {
     var id: ObjectIdentifier { get }

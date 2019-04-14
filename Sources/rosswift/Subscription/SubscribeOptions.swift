@@ -11,11 +11,11 @@ import StdMsgs
 public struct SubscribeOptions<M: Message> {
     var topic: String
     var transportHints: TransportHints?
-    var helper: SubscriptionCallbackHelper?
+    let helper: SubscriptionCallbackHelper 
     var trackedObject: AnyObject?
     var allowConcurrentCallbacks = false
     private var callbackQueueInternal: CallbackQueueInterface?
-    var queueSize: UInt32
+    let queueSize: UInt32
 
     init(topic: String, queueSize: UInt32, callback: @escaping ((M) -> Void)) {
         self.topic = topic

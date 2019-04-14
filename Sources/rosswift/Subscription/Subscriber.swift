@@ -11,10 +11,9 @@ import RosTime
 
 extension Ros {
 public final class Subscriber {
-    var topic: String
-    var node: Ros.NodeHandle?
-    var helper: SubscriptionCallbackHelper?
-    var isUnsubscribed: Bool
+    let topic: String
+    let node: Ros.NodeHandle
+    let helper: SubscriptionCallbackHelper
 
     struct LatchInfo {
         let message: SerializedMessage
@@ -23,32 +22,15 @@ public final class Subscriber {
         let receiptTime: RosTime.Time
     }
 
-    var latchedMessages = [ObjectIdentifier: LatchInfo]()
-
-    public init(topic: String, node: Ros.NodeHandle, helper: SubscriptionCallbackHelper?) {
+    public init(topic: String, node: Ros.NodeHandle, helper: SubscriptionCallbackHelper) {
         self.topic = topic
         self.node = node
         self.helper = helper
-        self.isUnsubscribed = false
     }
 
     deinit {
         ROS_DEBUG("Subscriber on '\(self.topic)' deregistering callbacks.")
-        unsubscribe()
-    }
-
-    func shutdown() {
-        unsubscribe()
-    }
-
-    func unsubscribe() {
-        if !isUnsubscribed {
-            isUnsubscribed = true
-            _ = TopicManager.instance.unsubscribe(topic: topic, helper: helper!)
-            node = nil
-            helper = nil
-            topic = ""
-        }
+        _ = TopicManager.instance.unsubscribe(topic: topic, helper: helper)
     }
 
     func getTopic() -> String {
@@ -56,10 +38,7 @@ public final class Subscriber {
     }
 
     func getNumPublishers() -> Int {
-        if !isUnsubscribed {
             return TopicManager.instance.getNumPublishers(topic: topic)
-        }
-        return 0
     }
 
 }

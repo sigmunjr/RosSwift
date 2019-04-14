@@ -294,7 +294,7 @@ extension Ros {
                     fatalError("Tried to subscribe to a topic with the same name" +
                         " but different md5sum as a topic that was already subscribed" +
                         " [\(M.datatype)/\(M.md5sum) vs. \(sub.datatype)/\(sub.md5sum)]")
-                } else if !sub.add(callback: ops.helper!,
+                } else if !sub.add(callback: ops.helper,
                                    md5: M.md5sum,
                                    queue: ops.callbackQueue,
                                    queueSize: ops.queueSize,
@@ -329,10 +329,6 @@ extension Ros {
                         throw InvalidParameterError("Subscribing to topic [\(options.topic)] with an empty datatype")
                     }
 
-                    if options.helper == nil {
-                        throw InvalidParameterError("Subscribing to topic [\(options.topic)] without a callback")
-                    }
-
                     let md5sum = M.md5sum
                     let datatype = M.datatype
 
@@ -340,7 +336,7 @@ extension Ros {
                                            md5sum: md5sum,
                                            datatype: datatype,
                                            transportHints: options.transportHints!)
-                    _ = sub.add(callback: options.helper!,
+                    _ = sub.add(callback: options.helper,
                                 md5: M.md5sum,
                                 queue: options.callbackQueue,
                                 queueSize: options.queueSize,

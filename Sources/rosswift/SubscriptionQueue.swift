@@ -28,8 +28,8 @@ final class SubscriptionQueue: CallbackInterface {
     }
 
     private var queue: Deque<Item>
-    private var topic: String
-    private var size: UInt32
+    private let topic: String
+    private let size: UInt32
     private var wasFull: Bool
     let queueQueue = DispatchQueue(label: "queueQueue")
     let allowConcurrentCallbacks: Bool
