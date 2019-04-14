@@ -7,6 +7,7 @@
 
 import Foundation
 import NIO
+import NIOConcurrencyHelpers
 
 let threadGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 
@@ -166,6 +167,7 @@ struct XMLRPCClient {
         let group: EventLoopGroup
         var bootstrap: ClientBootstrap?
         var handlers = [ObjectIdentifier: XmlRpcHandler]()
+        var lock = Lock()
         var channel: Channel?
 
         var uri: String {
@@ -181,13 +183,17 @@ struct XMLRPCClient {
         }
 
         func registerHandler(for channel: Channel, handler: XmlRpcHandler) {
-            precondition(handlers[ObjectIdentifier(channel)] == nil)
-            handlers[ObjectIdentifier(channel)] = handler
+            lock.withLock {
+                precondition(handlers[ObjectIdentifier(channel)] == nil)
+                handlers[ObjectIdentifier(channel)] = handler
+            }
         }
 
         func unregisterHandler(for channel: Channel) {
-            precondition(handlers[ObjectIdentifier(channel)] != nil)
-            handlers.removeValue(forKey: ObjectIdentifier(channel))
+            lock.withLock {
+                precondition(handlers[ObjectIdentifier(channel)] != nil)
+                handlers.removeValue(forKey: ObjectIdentifier(channel))
+            }
         }
 
         private init(group: EventLoopGroup) {
@@ -308,11 +314,13 @@ struct XMLRPCClient {
                 channel.closeFuture.whenComplete { result in
                     // FIXME: check result 
 
-                    guard let handler = self.handlers[ObjectIdentifier(channel)] else {
-                        fatalError("failed to connect to \(host):\(port) for method \(method)")
-                    }
+                    let result = self.lock.withLock { () -> XmlRpcValue? in
+                        guard let handler = self.handlers[ObjectIdentifier(channel)] else {
+                            fatalError("failed to connect to \(host):\(port) for method \(method)")
+                        }
 
-                    let result = self.validateXmlrpcResponse(method: method, response: handler.response)
+                        return self.validateXmlrpcResponse(method: method, response: handler.response)
+                    }
 
                     self.unregisterHandler(for: channel)
 
