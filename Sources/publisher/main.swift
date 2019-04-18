@@ -126,7 +126,9 @@ do {
 
 var parameter: Int = 0
 
-Ros.Param.getCached("int", &parameter)
+if Ros.Param.getCached("int", &parameter) {
+    print("parameter int = \(parameter)")
+}
 Ros.Param.set("~parm", ["T":34.3,"I":45.0,"D":0.34])
 
 var rate = RosTime.Rate(frequency: 1.0)

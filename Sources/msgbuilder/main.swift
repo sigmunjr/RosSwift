@@ -29,6 +29,7 @@ extension Data {
         var digest = Data(count: Int(length))
 
         // generate md5 hash
+        
         _ = digest.withUnsafeMutableBytes { (digestBytes: UnsafeMutablePointer<UInt8>) in
             self.withUnsafeBytes { (messageBytes: UnsafePointer<UInt8>) in
                 let length = CC_LONG(self.count)
@@ -50,7 +51,7 @@ public extension String {
 
     /// MD5 Hashing algorithm for hashing a string instance.
     /// - Returns: The requested hash output or nil if failure.
-    public func hashed() -> String? {
+    func hashed() -> String? {
 
         // convert string to utf8 encoded data
         guard let message = data(using: .utf8) else { return nil }

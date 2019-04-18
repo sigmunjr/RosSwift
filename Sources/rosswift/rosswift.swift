@@ -180,7 +180,7 @@ public struct Ros {
     static func check_ipv6_environment() {
         if let envIPv6 = getenv("ROS_IPV6") {
             let env = String(utf8String: envIPv6)
-            let useIPv6 = env == "on"
+//            let useIPv6 = env == "on"
         }
     }
 

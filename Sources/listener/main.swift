@@ -36,7 +36,7 @@ func chatterCallbackEvent(event: MessageEvent<String>) {
 let future = Ros.initialize(argv: &CommandLine.arguments, name: "listener")
 
 
-let n = Ros.NodeHandle()
+let n = Ros.NodeHandle(ns: "~")
 
 let request = TestStringString.Request("request from listener")
 do {

@@ -342,13 +342,7 @@ struct XMLRPCClient {
             let args = XmlRpcValue(array: [XmlRpcValue(str: Ros.ThisNode.getName()), XmlRpcValue(str: "")])
             do {
                 let payload = try execute(method: "getPublishedTopics", request: args).wait()
-
-                var topics = [TopicInfo]()
-                for i in 0..<payload.size() {
-                    topics.append(TopicInfo(name: payload[i][0].string, dataType: payload[i][1].string ) )
-                }
-
-                return topics
+                return payload.map { TopicInfo(name: $0[0].string, dataType: $0[1].string )}
             } catch {
                 ROS_ERROR("getPublishedTopics failed: \(error)")
             }

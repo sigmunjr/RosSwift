@@ -127,7 +127,7 @@ public struct Param {
             }
             if useCache {
                 parameterQueue.sync {
-                    ROS_DEBUG("cached_parameters: Caching parameter [\(mappedKey)] with value type [\(value?.getType())]")
+                    ROS_DEBUG("cached_parameters: Caching parameter [\(mappedKey)] with value type [\(String(describing: value?.getType()))]")
                     gParameters[mappedKey] = value
                 }
             }

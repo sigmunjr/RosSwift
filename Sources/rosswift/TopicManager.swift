@@ -163,7 +163,7 @@ extension Ros {
         }
 
         func getBusInfoCallback(params: XmlRpcValue ) -> XmlRpcValue {
-            var response = getBusInfo()
+            let response = getBusInfo()
             return XmlRpcValue(anyArray: [1, "", response])
         }
 

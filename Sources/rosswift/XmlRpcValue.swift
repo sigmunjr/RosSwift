@@ -87,6 +87,19 @@ public final class XmlRpcValue {
 //        }
     }
 
+    public var count: Int {
+        switch value {
+        case .array(let a):
+            return a.count
+        case .`struct`(let s):
+            return s.count
+        default:
+            return 1
+        }
+    }
+
+
+
     func size() -> Int {
         switch value {
         case .string(let s):
@@ -123,7 +136,7 @@ public final class XmlRpcValue {
         return false
     }
 
-    subscript(i: Int) -> XmlRpcValue {
+    public subscript(i: Int) -> XmlRpcValue {
         if case .array(let a) = value {
             return a[i]
         }
@@ -565,5 +578,20 @@ extension Dictionary where Value: XmlRpcValue {
             return Tags.memberXml((key as! String), value: value.toXml())
         }.joined()
         return Tags.structXml(a)
+    }
+}
+
+
+extension XmlRpcValue: Collection {
+    public func index(after i: Int) -> Int {
+        return i + 1
+    }
+
+    public var startIndex: Int {
+        return 0
+    }
+
+    public var endIndex: Int {
+        return count
     }
 }
