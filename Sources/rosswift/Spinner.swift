@@ -62,11 +62,12 @@ final class AsyncSpinnner {
     private let threadCount: Int
     private let callbackQueue: CallbackQueue
     private var running = Atomic<Bool>(value: false)
-    private let node = Ros.NodeHandle()
+    private let node: Ros.NodeHandle
 
     init(threadCount: Int, queue: CallbackQueue? = nil) {
         self.callbackQueue = queue != nil ? queue! : Ros.getGlobalCallbackQueue()
         self.threadCount = threadCount != 0 ? threadCount : System.coreCount
+        self.node = Ros.NodeHandle()
     }
 
     deinit {

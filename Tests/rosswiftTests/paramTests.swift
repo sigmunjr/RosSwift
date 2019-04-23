@@ -50,10 +50,10 @@ class paramTests: XCTestCase {
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
         let _ = Ros.initialize(argv: &CommandLine.arguments, name: "paramTests")
-        Ros.Param.set("string", "test")
-        Ros.Param.set("int", Int(10))
-        Ros.Param.set("double", Double(10.5))
-        Ros.Param.set("bool", false)
+        Ros.Param.set(key: "string", value: "test")
+        Ros.Param.set(key: "int", value: Int(10))
+        Ros.Param.set(key: "double", value: Double(10.5))
+        Ros.Param.set(key: "bool", value: false)
         _ = Ros.Param.del(key: "/test_set_param_setThenGetStringCached")
 
     }
@@ -82,7 +82,7 @@ class paramTests: XCTestCase {
     }
 
     func testSetThenGetString() {
-        Ros.Param.set( "test_set_param", "asdf" )
+        Ros.Param.set( key: "test_set_param", value: "asdf" )
 
         var param = ""
         XCTAssert( Ros.Param.get( "test_set_param", &param ) )
@@ -98,7 +98,7 @@ class paramTests: XCTestCase {
         var  param = ""
         XCTAssertFalse( Ros.Param.getCached( "test_set_param_setThenGetStringCached", &param) )
 
-        Ros.Param.set( "test_set_param_setThenGetStringCached", "asdf" )
+        Ros.Param.set( key: "test_set_param_setThenGetStringCached", value: "asdf" )
         XCTAssert( Ros.Param.getCached( "test_set_param_setThenGetStringCached", &param) )
         XCTAssertEqual( "asdf", param )
     }
@@ -111,11 +111,11 @@ class paramTests: XCTestCase {
         let ns = "test_set_param_setThenGetStringCached2"
         XCTAssertFalse(Ros.Param.getCached(ns, &stringParam))
 
-        Ros.Param.set(ns, "a")
+        Ros.Param.set(key: ns, value: "a")
         XCTAssert(Ros.Param.getCached(ns, &stringParam))
         XCTAssertEqual("a", stringParam)
 
-        Ros.Param.set(ns + "/foo", "b")
+        Ros.Param.set(key: ns + "/foo", value: "b")
         XCTAssert(Ros.Param.getCached(ns + "/foo", &stringParam))
         XCTAssertEqual("b", stringParam)
         XCTAssert(Ros.Param.getCached(ns, &structParam))
@@ -125,7 +125,7 @@ class paramTests: XCTestCase {
 
     func testSetThenGetCString()
     {
-        Ros.Param.set( "test_set_param", "asdf" )
+        Ros.Param.set( key: "test_set_param", value: "asdf" )
         var param = ""
         XCTAssert( Ros.Param.get( "test_set_param", &param ) )
         XCTAssertEqual( "asdf", param )
@@ -133,7 +133,7 @@ class paramTests: XCTestCase {
 
     func testsetThenGetInt()
     {
-        Ros.Param.set( "test_set_param", 42)
+        Ros.Param.set( key: "test_set_param", value: 42)
         var param = 0
         XCTAssert( Ros.Param.get( "test_set_param", &param ) )
         XCTAssertEqual( 42, param )
@@ -153,7 +153,7 @@ class paramTests: XCTestCase {
 
     func testdeleteParam()
     {
-        _ = Ros.Param.set( "test_delete_param", "asdf" )
+        _ = Ros.Param.set( key: "test_delete_param", value: "asdf" )
         _ = Ros.Param.del( key: "test_delete_param" )
         var param = ""
         XCTAssertFalse( Ros.Param.get( "test_delete_param", &param ) )
@@ -166,8 +166,8 @@ class paramTests: XCTestCase {
 
     func testsetIntDoubleGetInt()
     {
-        Ros.Param.set("test_set_int_as_double", 1)
-        Ros.Param.set("test_set_int_as_double", 3.0)
+        Ros.Param.set(key: "test_set_int_as_double", value: 1)
+        Ros.Param.set(key: "test_set_int_as_double", value: 3.0)
 
         var i = -1
         XCTAssert(Ros.Param.get("test_set_int_as_double", &i))
@@ -179,7 +179,7 @@ class paramTests: XCTestCase {
 
     func testgetIntAsDouble()
     {
-        Ros.Param.set("int_param", 1)
+        Ros.Param.set(key: "int_param", value: 1)
         var d = 0.0
         XCTAssert(Ros.Param.get("int_param", &d))
         XCTAssertEqual(1.0, d)
@@ -187,12 +187,12 @@ class paramTests: XCTestCase {
 
     func testgetDoubleAsInt()
     {
-        Ros.Param.set("double_param", 2.3)
+        Ros.Param.set(key: "double_param", value: 2.3)
         var i = -1
         XCTAssert(Ros.Param.get("double_param", &i))
         XCTAssertEqual(2, i)
 
-        Ros.Param.set("double_param", 3.8)
+        Ros.Param.set(key: "double_param", value: 3.8)
         i = -1
         XCTAssert(Ros.Param.get("double_param", &i))
         XCTAssertEqual(4, i)
@@ -203,17 +203,17 @@ class paramTests: XCTestCase {
         let ns = "/a/b/c/d/e/f"
         var result = ""
 
-        Ros.Param.set("/s_i", 1)
+        Ros.Param.set(key: "/s_i", value: 1)
         XCTAssert(Ros.Param.search(ns: ns, key: "s_i", result: &result))
         XCTAssertEqual(result, "/s_i")
         XCTAssert(Ros.Param.del(key: "/s_i"))
 
-        Ros.Param.set("/a/b/s_i", 1)
+        Ros.Param.set(key: "/a/b/s_i", value: 1)
         XCTAssert(Ros.Param.search(ns: ns, key: "s_i", result: &result))
         XCTAssertEqual(result, "/a/b/s_i")
         XCTAssert(Ros.Param.del(key: "/a/b/s_i"))
 
-        Ros.Param.set("/a/b/c/d/e/f/s_i", 1)
+        Ros.Param.set(key: "/a/b/c/d/e/f/s_i", value: 1)
         XCTAssert(Ros.Param.search(ns: ns, key: "s_i", result: &result))
         XCTAssertEqual(result, "/a/b/c/d/e/f/s_i")
         XCTAssert(Ros.Param.del(key: "/a/b/c/d/e/f/s_i"))
@@ -223,7 +223,10 @@ class paramTests: XCTestCase {
 
     func testsearchParamNodeHandle()
     {
-        let n = Ros.NodeHandle(ns: "/a/b/c/d/e/f")
+        guard let n = Ros.NodeHandle(ns: "/a/b/c/d/e/f") else {
+            XCTFail()
+            return
+        }
         var result = ""
 
         n.setParam("/s_i", 1)
@@ -249,7 +252,10 @@ class paramTests: XCTestCase {
     {
         _ = Ros.Param.del(key: "/s_b")
         let remappings = ["s_c":"s_b"]
-        let n = Ros.NodeHandle(ns: "/a/b/c/d/e/f", remappings: remappings)
+        guard let n = Ros.NodeHandle(ns: "/a/b/c/d/e/f", remappings: remappings) else {
+            XCTFail()
+            return
+        }
         var result = ""
 
         n.setParam("/s_c", 1)
@@ -268,7 +274,7 @@ class paramTests: XCTestCase {
 
     func testdoublePrecision()
     {
-        Ros.Param.set("bar", 0.123456789123456789)
+        Ros.Param.set(key: "bar", value: 0.123456789123456789)
         var d = 0.0
         XCTAssert(Ros.Param.get("bar", &d))
         XCTAssertEqual(d, 0.12345678912345678)
@@ -292,7 +298,7 @@ class paramTests: XCTestCase {
 
         vec_s = ["foo","bar","baz"]
 
-        Ros.Param.set(param_name, vec_s)
+        Ros.Param.set(key: param_name, value: vec_s)
 
         XCTAssertFalse(Ros.Param.get(param_name, &vec_d))
         XCTAssertFalse(Ros.Param.get(param_name, &vec_f))
@@ -306,7 +312,7 @@ class paramTests: XCTestCase {
 
         // test empty vector
         vec_s.removeAll()
-        Ros.Param.set(param_name, vec_s)
+        Ros.Param.set(key: param_name, value: vec_s)
         XCTAssert(Ros.Param.get(param_name, &vec_s2))
         XCTAssertEqual(vec_s.count, vec_s2.count)
     }
@@ -317,7 +323,7 @@ class paramTests: XCTestCase {
 
         vec_d = [-0.123456789,3,3.01,7.01]
 
-        Ros.Param.set(param_name, vec_d)
+        Ros.Param.set(key: param_name, value: vec_d)
 
         XCTAssertFalse(Ros.Param.get(param_name, &vec_s))
         XCTAssert(Ros.Param.get(param_name, &vec_i))
@@ -340,7 +346,7 @@ class paramTests: XCTestCase {
 
         vec_f = [-0.25, 0.0, 3, 3.25]
 
-        Ros.Param.set(param_name, vec_f)
+        Ros.Param.set(key: param_name, value: vec_f)
 
         XCTAssertFalse(Ros.Param.get(param_name, &vec_s))
         XCTAssert(Ros.Param.get(param_name, &vec_i))
@@ -363,7 +369,7 @@ class paramTests: XCTestCase {
 
         vec_i = [-1, 0, 1337, 2]
 
-        Ros.Param.set(param_name, vec_i)
+        Ros.Param.set(key: param_name, value: vec_i)
 
         XCTAssertFalse(Ros.Param.get(param_name, &vec_s))
         XCTAssert(Ros.Param.get(param_name, &vec_d))
@@ -386,7 +392,7 @@ class paramTests: XCTestCase {
 
         vec_b = [true, false, true, true]
 
-        Ros.Param.set(param_name, vec_b)
+        Ros.Param.set(key: param_name, value: vec_b)
 
         XCTAssertFalse(Ros.Param.get(param_name, &vec_s))
         XCTAssert(Ros.Param.get(param_name, &vec_d))
@@ -421,7 +427,7 @@ class paramTests: XCTestCase {
 
         map_s = ["a": "apple", "b": "blueberry", "c": "carrot"]
 
-        Ros.Param.set(param_name, map_s)
+        Ros.Param.set(key: param_name, value: map_s)
 
         XCTAssertFalse(Ros.Param.get(param_name, &map_d))
         XCTAssertFalse(Ros.Param.get(param_name, &map_f))
@@ -440,7 +446,7 @@ class paramTests: XCTestCase {
 
         map_d = ["a":0.0,"b":-0.123456789,"c":123456789]
 
-        Ros.Param.set(param_name, map_d)
+        Ros.Param.set(key: param_name, value: map_d)
 
         XCTAssertFalse(Ros.Param.get(param_name, &map_s))
         XCTAssert(Ros.Param.get(param_name, &map_f))
@@ -462,7 +468,7 @@ class paramTests: XCTestCase {
 
         map_f = ["a": 0.0, "b":-0.25,"c":1234567]
 
-        Ros.Param.set(param_name, map_f)
+        Ros.Param.set(key: param_name, value: map_f)
 
         XCTAssertFalse(Ros.Param.get(param_name, &map_s))
         XCTAssert(Ros.Param.get(param_name, &map_d))
@@ -485,7 +491,7 @@ class paramTests: XCTestCase {
 
         map_i = ["a":0, "b":-1, "c":1337]
 
-        Ros.Param.set(param_name, map_i)
+        Ros.Param.set(key: param_name, value: map_i)
 
         XCTAssertFalse(Ros.Param.get(param_name, &map_s))
         XCTAssert(Ros.Param.get(param_name, &map_d))
@@ -508,7 +514,7 @@ class paramTests: XCTestCase {
 
         map_b = ["a":true, "b":false, "c":true]
 
-        Ros.Param.set(param_name, map_b)
+        Ros.Param.set(key: param_name, value: map_b)
 
         XCTAssertFalse(Ros.Param.get(param_name, &map_s))
         XCTAssert(Ros.Param.get(param_name, &map_d))

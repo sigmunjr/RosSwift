@@ -70,7 +70,9 @@ let future = Ros.initialize(argv: &CommandLine.arguments, name: "talker")
 
 var keys = [String]()
 
-let n = Ros.NodeHandle()
+guard let n = Ros.NodeHandle(ns: "") else {
+    exit(1)
+}
 
 let req = AddTwoIntsRequest(a: 34, b: 22)
 do {
@@ -82,8 +84,11 @@ do {
 }
 
 
-let srv1 = n.advertiseService(service: "service_adv", srvFunc: caseFlip)
-let srv2 = n.advertiseService(service: "echo", srvFunc: echo)
+let srv1 = n.advertise(service: "service_adv", srvFunc: caseFlip)
+let srv2 = n.advertise(service: "echo") { (req: TestStringString.Request) -> TestStringString.Response? in
+    let response = req.data.uppercased()
+    return .init(response)
+}
 
 
 guard let natter_pub = n.advertise(topic: "/natter", message: geometry_msgs.Point.self ) else {
@@ -129,7 +134,7 @@ var parameter: Int = 0
 if Ros.Param.getCached("int", &parameter) {
     print("parameter int = \(parameter)")
 }
-Ros.Param.set("~parm", ["T":34.3,"I":45.0,"D":0.34])
+Ros.Param.set(key: "~parm", value: ["T":34.3,"I":45.0,"D":0.34])
 
 var rate = RosTime.Rate(frequency: 1.0)
 

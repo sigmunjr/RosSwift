@@ -9,6 +9,7 @@ import BinaryCoder
 import Foundation
 import NIO
 import NIOConcurrencyHelpers
+import NIOExtras
 import StdMsgs
 
 enum ConnectionError: Error {
@@ -42,7 +43,12 @@ final class InboundConnection: ConnectionProtocol {
             // Enable SO_REUSEADDR.
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
-                channel.pipeline.addHandler(InboundHandler(parent: self))
+                channel.pipeline.addHandlers([
+                    ByteToMessageHandler(
+                    LengthFieldBasedFrameDecoder(lengthFieldLength: .four, lengthFieldEndianness: .little)),
+                    InboundHandler(parent: self)
+                ])
+//                channel.pipeline.addHandler(InboundHandler(parent: self))
         }
 
         do {
@@ -131,20 +137,20 @@ final class InboundConnection: ConnectionProtocol {
         func channelRead(context: ChannelHandlerContext, data: NIOAny) {
 
             var buffer = self.unwrapInboundIn(data)
-            guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
-                fatalError()
-            }
-            if len > buffer.readableBytes {
-                ROS_ERROR("Received length \(buffer.readableBytes) < \(len) [\(self.parent?.remoteAddress ?? "uknown host")]")
-                _ = context.close()
-            }
+//            guard let len: UInt32 = buffer.readInteger(endianness: .little) else {
+//                fatalError()
+//            }
+//            if len > buffer.readableBytes {
+//                ROS_ERROR("Received length \(buffer.readableBytes) < \(len) [\(self.parent?.remoteAddress ?? "uknown host")]")
+//                _ = context.close()
+//            }
 
             guard let p = parent, let link = parent?.link else {
                 return
             }
 
             if link.header == nil {
-                if let headerData = buffer.readBytes(length: Int(len)) {
+                if let headerData = buffer.readBytes(length: buffer.readableBytes) {
                     let header = Header()
                     if !header.parse(buffer: headerData) {
                         p.drop(reason: .headerError)
@@ -156,9 +162,11 @@ final class InboundConnection: ConnectionProtocol {
                             p.onHeaderReceived(header: header)
                         }
                     }
+                } else {
+                    ROS_ERROR("Could not read available \(buffer.readableBytes)")
                 }
 
-            } else if let rawMessage = buffer.readBytes(length: Int(len)) {
+            } else if let rawMessage = buffer.readBytes(length: buffer.readableBytes) {
                 let m = SerializedMessage(buffer: rawMessage)
                 if let sub = p.parent {
                     // FIXME: Handle drop statistics
@@ -166,6 +174,8 @@ final class InboundConnection: ConnectionProtocol {
                                            connectionHeader: link.header!.getValues(),
                                            link: link)
                 }
+            } else {
+                ROS_ERROR("Could not read available \(buffer.readableBytes)")
             }
         }
     }

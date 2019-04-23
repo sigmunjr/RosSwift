@@ -178,10 +178,10 @@ public struct Ros {
     }
 
     static func check_ipv6_environment() {
-        if let envIPv6 = getenv("ROS_IPV6") {
-            let env = String(utf8String: envIPv6)
+//        if let envIPv6 = getenv("ROS_IPV6") {
+//            let env = String(utf8String: envIPv6)
 //            let useIPv6 = env == "on"
-        }
+//        }
     }
 
     func removeROSArgs(argv: [String]) -> [String] {
@@ -239,7 +239,8 @@ public struct Ros {
             rosoutAppender = appender
         }
 
-        _ = ServiceManager.instance.advertiseService(.init(service: Names.resolve(name: "~set_logger_level"),
+        let logServiceName = Names.resolve(name: "~set_logger_level")!
+        _ = ServiceManager.instance.advertiseService(.init(service: logServiceName,
                                                            callback: setLoggerLevel))
 
         if isShuttingDown.load() {
@@ -249,7 +250,8 @@ public struct Ros {
         if let enableDebug = ProcessInfo.processInfo.environment["ROSCPP_ENABLE_DEBUG"],
             enableDebug.lowercased() == "true" || enableDebug == "1" {
 
-            _ = ServiceManager.instance.advertiseService(.init(service: Names.resolve(name: "~debug/close_all_connections"),
+            let closeServiceName = Names.resolve(name: "~debug/close_all_connections")!
+            _ = ServiceManager.instance.advertiseService(.init(service: closeServiceName,
                                                                    callback: closeAllConnections))
         }
 
@@ -342,6 +344,7 @@ public struct Ros {
             isStarted = false
             isRunning = false
             promise.succeed(())
+            isShuttingDown.store(false)
         }
     }
 

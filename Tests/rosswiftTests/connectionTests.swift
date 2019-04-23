@@ -36,29 +36,42 @@ class connectionTests: XCTestCase {
     func testNodeHandleConstructionDestruction() {
         do {
             XCTAssertFalse(Ros.isStarted)
-            let _ = Ros.NodeHandle()
+            let n1 = Ros.NodeHandle()
             XCTAssert(Ros.isStarted)
+            XCTAssertEqual(n1.refCount,1)
+            XCTAssert(n1.gNodeStartedByNodeHandle)
             do {
-                let _ = Ros.NodeHandle()
+                let n2 = Ros.NodeHandle()
                 XCTAssert(Ros.isStarted)
+                XCTAssertEqual(n2.refCount,2)
+                XCTAssertFalse(n2.gNodeStartedByNodeHandle)
                 do {
-                    let _ = Ros.NodeHandle()
+                    let n3 = Ros.NodeHandle()
                     XCTAssert(Ros.isStarted)
+                    XCTAssertEqual(n3.refCount,3)
+                    XCTAssertFalse(n3.gNodeStartedByNodeHandle)
                     do {
-                        let _ = Ros.NodeHandle()
+                        let n4 = Ros.NodeHandle()
                         XCTAssert(Ros.isStarted)
+                        XCTAssertFalse(n4.gNodeStartedByNodeHandle)
+                        XCTAssertEqual(n4.refCount,4)
                     }
+                    XCTAssertEqual(n1.refCount,3)
                 }
+                XCTAssertEqual(n1.refCount,2)
             }
+            XCTAssertEqual(n1.refCount,1)
             XCTAssert(Ros.isStarted)
         }
+        XCTAssertEqual(Ros.refCount, 0)
         XCTAssertFalse(Ros.isStarted)
-        sleep(1)
         do {
-            let _ = Ros.NodeHandle()
+            let n5 = Ros.NodeHandle()
             XCTAssert(Ros.isStarted)
+            XCTAssertEqual(n5.refCount,1)
+            XCTAssert(n5.gNodeStartedByNodeHandle)
         }
-        sleep(1)
+        XCTAssertEqual(Ros.refCount, 0)
         XCTAssertFalse(Ros.isStarted)
     }
 
@@ -108,7 +121,15 @@ class connectionTests: XCTestCase {
 
     func testnodeHandleParentWithRemappings() {
         let remappings = ["a":"b", "c":"d"]
-        let n1 = Ros.NodeHandle(ns: "", remappings: remappings)
+        guard let n1 = Ros.NodeHandle(ns: "/", remappings: remappings) else {
+            XCTFail()
+            return
+        }
+
+        
+        XCTAssertEqual(n1.namespace, "/")
+        XCTAssertEqual(n1.remappings, ["/a":"/b","/c":"/d"])
+
 
         // Sanity checks
 

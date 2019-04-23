@@ -77,15 +77,50 @@ public struct RosTime {
         nsec = Int32(nsec64)
     }
 
+    public struct Timer {
+
+        public init() {
+            fatalError("not implemented")
+        }
+
+    }
+
+    /// Structure passed as a parameter to the callback invoked by a `RosTime.Timer`
+
     public struct TimerEvent {
+        
+        /// In a perfect world, this is when the last callback should have happened.
         let lastExpected: Time
+
+        /// When the last timer actually expired and the callback was added to the queue.
+        let lastExpired: Time
+
+        /// When the last callback actually happened.
         let lastReal: Time
+
+        /// In a perfect world, this is when the current callback should be happening
         let currentExpected: Time
+
+        /// When the current timer actually expired and the callback was added to the queue
+        let currentExpired: Time
+
+        /// This is when the current callback was actually called (Time::now() as of the beginning of the callback)
         let currentReal: Time
 
         struct Profile {
+            /// How long the last callback ran for.
             let lastDuration: WallDuration
         }
+    }
+
+
+
+    public struct SteadyTimer {
+
+        public init() {
+            fatalError("not implemented")
+        }
+
     }
 
     public struct SteadyTimerEvent {
@@ -107,6 +142,12 @@ public struct RosTime {
 
         struct Profile {
             let lastDuration: WallDuration
+        }
+    }
+
+    public struct WallTimer {
+        public init() {
+            fatalError("not implemented")
         }
     }
 

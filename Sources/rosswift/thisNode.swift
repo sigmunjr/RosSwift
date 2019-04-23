@@ -81,7 +81,7 @@ extension Ros {
                 fatalError("\(name), node names cannot contain ~")
             }
 
-            name = Names.resolve(ns: namespace, name: name)
+            name = Names.resolve(ns: namespace, name: name)!
 
             if options.contains(.anonymousName) && !disableAnon {
                 name.append("_\(RosTime.WallTime.now().toNSec())")

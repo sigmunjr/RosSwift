@@ -44,7 +44,7 @@ class serviceTests: XCTestCase {
     func testCallService() {
 
         let node = Ros.NodeHandle()
-        guard let serv = node.advertiseService(service: "/service_adv", srvFunc: srvCallback) else {
+        guard let serv = node.advertise(service: "/service_adv", srvFunc: srvCallback) else {
             XCTFail()
             return
         }
@@ -87,7 +87,7 @@ class serviceTests: XCTestCase {
         let n = Ros.NodeHandle()
         var t = TestStringString()
 
-        let srv1 = n.advertiseService(service: "/test_srv", srvFunc: serviceCallback)
+        let srv1 = n.advertise(service: "/test_srv", srvFunc: serviceCallback)
         XCTAssertNotNil(srv1)
         XCTAssert(Service.call(name: "/test_srv", service: &t))
         XCTAssertEqual(t.response.data, "test")
@@ -100,7 +100,7 @@ class serviceTests: XCTestCase {
         var t = TestStringString()
 
         do {
-            let srv1 = n.advertiseService(service: "/test_srv_23", srvFunc: serviceCallback)
+            let srv1 = n.advertise(service: "/test_srv_23", srvFunc: serviceCallback)
             sleep(4)
             XCTAssert(Service.call(name: "/test_srv_23", service: &t))
             do {
@@ -136,8 +136,8 @@ class serviceTests: XCTestCase {
     func testServiceAdvMultiple()  {
         let n = Ros.NodeHandle()
 
-        let srv = n.advertiseService(service: "/test_srv_19", srvFunc: serviceCallback)
-        let srv2 = n.advertiseService(service: "/test_srv_19", srvFunc: serviceCallback)
+        let srv = n.advertise(service: "/test_srv_19", srvFunc: serviceCallback)
+        let srv2 = n.advertise(service: "/test_srv_19", srvFunc: serviceCallback)
         XCTAssert(srv != nil)
         XCTAssertNil(srv2)
 
@@ -148,7 +148,7 @@ class serviceTests: XCTestCase {
     func testCallSrvMultipleTimes() {
 
         let node = Ros.NodeHandle()
-        let serv = node.advertiseService(service: "/service_adv2", srvFunc: srvCallback)
+        let serv = node.advertise(service: "/service_adv2", srvFunc: srvCallback)
         XCTAssertNotNil(serv)
         var req = TestStringString.Request()
         var res = TestStringString.Response()

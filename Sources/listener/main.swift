@@ -20,7 +20,7 @@ struct B {
     }
 }
 
-func natterCallback(msg: geometry_msgs.Point) {
+func natterCallback(msg: geometry_msgs.Accel) {
     print("I heard: [\(msg)]")
 }
 
@@ -36,7 +36,9 @@ func chatterCallbackEvent(event: MessageEvent<String>) {
 let future = Ros.initialize(argv: &CommandLine.arguments, name: "listener")
 
 
-let n = Ros.NodeHandle(ns: "~")
+guard let n = Ros.NodeHandle(ns: "~") else {
+    exit(1)
+}
 
 let request = TestStringString.Request("request from listener")
 do {
@@ -52,7 +54,7 @@ do {
 let a = A(value: 345)
 let b = B(value: 99.345)
 
-let sub = n.subscribe(topic: "/natter", queueSize: 1, callback: natterCallback)
+let sub = n.subscribe(topic: "/accel", queueSize: 1, callback: natterCallback)
 let vab = n.subscribe(topic: "/chatter", queueSize: 1, callback: chatterCallback)
 let aab = n.subscribe(topic: "/chatter", queueSize: 1, callback: a.chatterCallback)
 let bab = n.subscribe(topic: "/chatter", queueSize: 1, callback: b.chatterCallback)

@@ -335,7 +335,7 @@ extension Ros {
                     let sub = Subscription(name: options.topic,
                                            md5sum: md5sum,
                                            datatype: datatype,
-                                           transportHints: options.transportHints!)
+                                           transportHints: options.transportHints)
                     _ = sub.add(callback: options.helper,
                                 md5: M.md5sum,
                                 queue: options.callbackQueue,

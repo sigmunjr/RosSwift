@@ -17,24 +17,171 @@ public struct Param {
     static var gSubscribedParameters = Set<String>()
     static var gParameters = ParameterStorage()
 
-    public static func set<T>(_ key: String, _ value: T) {
-        let mappedKey = Names.resolve(name: key)
-        let v = XmlRpcValue(any: value)
-        let params = XmlRpcValue(anyArray: [ThisNode.getName(), mappedKey, v])
-        do {
-            let parameter = try Master.shared.execute(method: "setParam", request: params).wait()
-            ROS_DEBUG("set<T> response: \(parameter)")
-            if gSubscribedParameters.contains(mappedKey) {
-                gParameters[mappedKey] = v
-            }
-            invalidateParentParams(mappedKey)
-        } catch {
-            ROS_ERROR("Could not set parameter \(mappedKey) \(error)")
+    /// Delete a parameter from the parameter server.
+    ///
+    /// - Parameters:
+    ///     - key:    The key to delete.
+    /// - Returns:
+    ///    - true: if the deletion succeeded
+    ///    - false: otherwise.
+    /// - Throws:
+    ///     - invalidName    if the key is not a valid graph resource name
+
+    public static func del(key: String) -> Bool {
+        guard let mappedKey = Names.resolve(name: key) else {
+            return false
         }
+
+        parameterQueue.sync {
+            gSubscribedParameters.remove(mappedKey)
+            gParameters.removeValue(forKey: mappedKey)
+        }
+
+        let params = XmlRpcValue(anyArray: [ThisNode.getName(), mappedKey])
+        do {
+            let payload = try Master.shared.execute(method: "deleteParam", request: params).wait()
+            return payload.valid()
+        } catch {
+            ROS_ERROR("del(key: String) error: \(error)")
+        }
+        return false
     }
 
+    /// Get a value from the parameter server.
+    ///
+    /// - Parameters:
+    ///     - key:    The key to be used in the parameter server's dictionary.
+    ///     - value:  Storage for the retrieved value
+    /// - Returns:
+    ///    - true: if the parameter value was retrieved
+    ///    - false: otherwise.
+    /// - Throws:
+    ///     - invalidName    if the key is not a valid graph resource name
+
+
+    public static func get<T>(_ key: String, _ value: inout T) -> Bool {
+        if let v = getImpl(key: key, useCache: false) {
+            if T.self == XmlRpcValue.self {
+                value = v as! T
+                return true
+            }
+            if v.get(val: &value) {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Get an integer value from the parameter server.
+    ///
+    /// - Parameters:
+    ///     - key:    The key to be used in the parameter server's dictionary.
+    ///     - value:  Storage for the retrieved value
+    /// - Returns:
+    ///    - true: if the parameter value was retrieved
+    ///    - false: otherwise.
+    /// - Throws:
+    ///     - invalidName    if the key is not a valid graph resource name
+
+
+    public static func get(_ key: String, _ value: inout Int) -> Bool {
+        if let v = getImpl(key: key, useCache: false) {
+            switch v.value {
+            case .int(let i):
+                value = i
+                return true
+            case .double(let d):
+                var v = d
+                if fmod(d, 1.0) < 0.5 {
+                    v = floor(v)
+                } else {
+                    v = ceil(v)
+                }
+                if let i = Int(exactly: v) {
+                    value = i
+                    return true
+                }
+            default:
+                return false
+            }
+        }
+        return false
+    }
+
+    /// Get a value from the parameter server, with local caching.
+    ///
+    /// This function will cache parameters locally, and subscribe for updates from the
+    /// parameter server. Once the parameter is retrieved for the first time no subsequent
+    /// getCached() calls with the same key will query the master – they will instead look up
+    /// in the local cache.
+    ///
+    /// - Parameters:
+    ///     - key:    The key to be used in the parameter server's dictionary.
+    ///     - value:  Storage for the retrieved value
+    /// - Returns:
+    ///    - true: if the parameter value was retrieved
+    ///    - false: otherwise.
+    /// - Throws:
+    ///     - invalidName    if the key is not a valid graph resource name
+
+
+    public static func getCached<T>(_ key: String, _ value: inout T) -> Bool {
+        if let v = getImpl(key: key, useCache: true) {
+            if T.self == XmlRpcValue.self {
+                value = v as! T
+                return true
+            }
+            if v.get(val: &value) {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Get the list of all the parameters in the server
+    ///
+    /// - Parameter keys: The vector of all the keys
+    /// - Returns: false if the process fails
+
+    public static func getParamNames(keys: inout [String]) -> Bool {
+        let params = XmlRpcValue(str: ThisNode.getName())
+        do {
+            let parameters = try Master.shared.execute(method: "getParamNames", request: params).wait()
+
+            if !parameters.isArray {
+                return false
+            }
+            keys.removeAll()
+            for i in 0..<parameters.size() {
+                guard parameters[i].isString else {
+                    return false
+                }
+                keys.append(parameters[i].string)
+            }
+            return true
+
+        } catch {
+            ROS_ERROR("error during getParamNames \(error)")
+        }
+        return false
+
+    }
+
+    /// Check whether a parameter exists on the parameter server.
+    ///
+    /// - Parameters:
+    ///     - key: The key to check
+    /// - Returns:
+    ///     - true if the parameter exists, false otherwise
+    /// - Throws:
+    ///     - invalidName    if the key is not a valid graph resource name
+
     public static func has(key: String) -> Bool {
-        let params = XmlRpcValue(anyArray: [ThisNode.getName(), Names.resolve(name: key)])
+        guard let resolved = Names.resolve(name: key) else {
+            return false
+        }
+
+        let params = XmlRpcValue(anyArray: [ThisNode.getName(), resolved])
 
         // We don't loop here, because validateXmlrpcResponse() returns false
         // both when we can't contact the master and when the master says, "I
@@ -54,25 +201,201 @@ public struct Param {
         return false
     }
 
-    static func del(key: String) -> Bool {
-        let mappedKey = Names.resolve(name: key)
-        parameterQueue.sync {
-            gSubscribedParameters.remove(mappedKey)
-            gParameters.removeValue(forKey: mappedKey)
+
+    public static func initialize(remappings: StringStringMap) {
+        for map in remappings {
+
+            let name = map.key
+            let param = map.value
+
+            // Don't allow short names
+
+            if name.count < 2 {
+                ROS_ERROR("Will not remap \(name) to \(param)")
+                continue
+            }
+
+            if name.starts(with: "_") && !name.dropFirst().starts(with: "_") {
+                if let localName = Names.resolve(name: "~".appending(name.dropFirst())) {
+                    if let i = Int32(param) {
+                        set(key: localName, value: i)
+                    } else if let d = Double(param) {
+                        set(key: localName, value: d)
+                    } else {
+                        switch param {
+                        case "true", "True", "TRUE":
+                            set(key: localName, value: true)
+                        case "false", "False", "FALSE":
+                            set(key: localName, value: false)
+                        default:
+                            set(key: localName, value: param)
+                        }
+                    }
+                }
+            }
         }
 
-        let params = XmlRpcValue(anyArray: [ThisNode.getName(), mappedKey])
-        do {
-            let payload = try Master.shared.execute(method: "deleteParam", request: params).wait()
-            return payload.valid()
-        } catch {
-            ROS_ERROR("del(key: String) error: \(error)")
+        if !XMLRPCManager.instance.bind(function: "paramUpdate", cb: paramUpdateCallback) {
+            ROS_DEBUG("\(#function) Could not bind paramUpdate")
         }
+    }
+
+    public static func invalidateParentParams(_ key: String) {
+        guard var nsKey = Names.parentNamespace(name: key) else {
+            return
+        }
+
+        while nsKey != "" && nsKey != "/" {
+            if gSubscribedParameters.contains(nsKey) {
+                // by erasing the key the parameter will be re-queried
+                gParameters.removeValue(forKey: nsKey)
+            }
+
+            // This should always succeed
+            nsKey = Names.parentNamespace(name: nsKey)!
+        }
+    }
+
+    /// Assign value from parameter server, with default.
+    ///
+    /// This method tries to retrieve the indicated parameter value from the
+    /// parameter server, storing the result in `value`.  If the value
+    /// cannot be retrieved from the server, `defaultValue` is used instead.
+
+    /// - Parameters:
+    ///     - name: The key to be searched on the parameter server.
+    ///     - value: Storage for the retrieved value.
+    ///     - defaultValue: Value to use if the server doesn't contain this parameter.
+    /// - Returns: `true` if the parameter was retrieved from the server, `false` otherwise.
+
+    public static func param<T>(name: String, value: inout T, defaultValue: T) -> Bool {
+        if has(key: name) && get(name, &value) {
+            return true
+        }
+
+        value = defaultValue
         return false
     }
 
-    static func getImpl(key: String, useCache: Bool) -> XmlRpcValue? {
-        var mappedKey = Names.resolve(name: key)
+    /// Return value from parameter server, or default if unavailable.
+    ///
+    /// This method tries to retrieve the indicated parameter value from the
+    /// parameter server. If the parameter cannot be retrieved, \c default_val
+    /// is returned instead.
+    ///
+    /// - parameter name: The key to be searched on the parameter server.
+    /// - parameter defaultValue: Value to return if the server doesn't contain this
+    /// parameter.
+    ///
+    /// - returns: The parameter value retrieved from the parameter server, or
+    /// defaultValue if unavailable.
+
+    public static func param<T>(name: String, defaultValue: T) -> T {
+        var value = defaultValue
+        _ = param(name: name, value: &value, defaultValue: defaultValue )
+        return value
+    }
+
+    static func paramUpdateCallback(params: XmlRpcValue) -> XmlRpcValue {
+        update(key: params[1].string, value: params[2])
+        return XmlRpcValue(anyArray: [1, "", 0])
+    }
+
+    /// Search up the tree for a parameter with a given key. This version defaults to starting in the current node's name.
+    /// This function parameter server's searchParam feature to search up the tree for a parameter. For
+    /// example, if the parameter server has a parameter [/a/b] and you specify the namespace [/a/c/d],
+    /// searching for the parameter "b" will yield [/a/b]. If [/a/c/d/b] existed, that parameter would be
+    /// returned instead
+    ///
+    /// - Parameters:
+    ///     - key: parameter to search for
+    ///     - result: the found value (if any)
+    ///
+    /// - Returns: true if the parameter was found, false otherwise.
+
+
+    public static func search(key: String, result: inout String) -> Bool {
+        return search(ns: Ros.ThisNode.getName(), key: key, result: &result)
+    }
+
+
+    /// Search up the tree for a parameter with a given key.
+    ///
+    /// This function parameter server's searchParam feature to search up the tree for a parameter. For
+    /// example, if the parameter server has a parameter [/a/b] and you specify the namespace [/a/c/d],
+    /// searching for the parameter "b" will yield [/a/b]. If [/a/c/d/b] existed, that parameter would be
+    /// returned instead.
+    ///
+    /// - Parameters:
+    ///     - ns: The namespace to begin the search in
+    ///     - key: parameter to search for
+    ///     - result: the found value (if any)
+    ///
+    /// - Returns: true if the parameter was found, false otherwise.
+
+
+    public static func search(ns: String, key: String, result: inout String) -> Bool {
+
+        // searchParam needs a separate form of remapping -- remapping on the unresolved name, rather than the
+        // resolved one.
+
+        var remapped = key
+        if let it = Names.getUnresolvedRemappings()[key] {
+            remapped = it
+        }
+
+        let params = XmlRpcValue(anyArray: [ns, remapped])
+
+        // We don't loop here, because validateXmlrpcResponse() returns false
+        // both when we can't contact the master and when the master says, "I
+        // don't have that param."
+
+        do {
+            let payload = try Master.shared.execute(method: "searchParam", request: params).wait()
+            result = payload.string
+        } catch {
+            ROS_ERROR("error during searchParam \(error)")
+            return false
+        }
+
+        return true
+    }
+
+
+    /// Set an arbitrary value of type T on the parameter server
+    ///
+    /// - Parameters:
+    ///     - key:    The key to be used in the parameter server's dictionary.
+    ///     - value:  The value to be inserted
+    /// - Throws:
+    ///     - invalidName    if the key is not a valid graph resource name
+
+
+    public static func set<T>(key: String, value: T) {
+        guard let mappedKey = Names.resolve(name: key) else {
+            ROS_ERROR("Could not set parameter \(key)")
+            return
+        }
+
+        let v = XmlRpcValue(any: value)
+        let params = XmlRpcValue(anyArray: [ThisNode.getName(), mappedKey, v])
+        do {
+            let parameter = try Master.shared.execute(method: "setParam", request: params).wait()
+            ROS_DEBUG("set<T> response: \(parameter)")
+            if gSubscribedParameters.contains(mappedKey) {
+                gParameters[mappedKey] = v
+            }
+            invalidateParentParams(mappedKey)
+        } catch {
+            ROS_ERROR("Could not set parameter \(mappedKey) \(error)")
+        }
+    }
+
+    private static func getImpl(key: String, useCache: Bool) -> XmlRpcValue? {
+        guard var mappedKey = Names.resolve(name: key) else {
+            return nil
+        }
+
         if mappedKey.isEmpty {
             mappedKey = "/"
         }
@@ -139,68 +462,8 @@ public struct Param {
         return value
     }
 
-    public static func get<T>(_ key: String, _ value: inout T) -> Bool {
-        if let v = getImpl(key: key, useCache: false) {
-            if T.self == XmlRpcValue.self {
-                value = v as! T
-                return true
-            }
-            if v.get(val: &value) {
-                return true
-            }
-        }
-        return false
-    }
 
-    public static func get(_ key: String, _ value: inout Int) -> Bool {
-        if let v = getImpl(key: key, useCache: false) {
-            switch v.value {
-            case .int(let i):
-                value = i
-                return true
-            case .double(let d):
-                var v = d
-                if fmod(d, 1.0) < 0.5 {
-                    v = floor(v)
-                } else {
-                    v = ceil(v)
-                }
-                if let i = Int(exactly: v) {
-                    value = i
-                    return true
-                }
-            default:
-                return false
-            }
-        }
-        return false
-    }
-
-    public static func getCached<T>(_ key: String, _ value: inout T) -> Bool {
-        if let v = getImpl(key: key, useCache: true) {
-            if T.self == XmlRpcValue.self {
-                value = v as! T
-                return true
-            }
-            if v.get(val: &value) {
-                return true
-            }
-        }
-        return false
-    }
-
-    static func invalidateParentParams(_ key: String) {
-        var nsKey = Names.parentNamespace(name: key)
-        while nsKey != "" && nsKey != "/" {
-            if gSubscribedParameters.contains(nsKey) {
-                // by erasing the key the parameter will be re-queried
-                gParameters.removeValue(forKey: nsKey)
-            }
-            nsKey = Names.parentNamespace(name: nsKey)
-        }
-    }
-
-    static func update(key: String, value: XmlRpcValue) {
+    private static func update(key: String, value: XmlRpcValue) {
         let cleanKey = Names.clean(key)
         ROS_DEBUG("cached_parameters: Received parameter update for key [\(cleanKey)] new value: [\(value)]")
 
@@ -212,150 +475,6 @@ public struct Param {
         }
     }
 
-    static func paramUpdateCallback(params: XmlRpcValue) -> XmlRpcValue {
-        update(key: params[1].string, value: params[2])
-        return XmlRpcValue(anyArray: [1, "", 0])
-    }
-
-    static func initialize(remappings: StringStringMap) {
-        for map in remappings {
-            if map.key.count < 2 {
-                continue
-            }
-
-            let name = map.key
-            let param = map.value
-
-            if name.starts(with: "_") && !name.dropFirst().starts(with: "_") {
-                let localName = Names.resolve(name: "~".appending(name.dropFirst()))
-
-                if let i = Int32(param) {
-                    set(localName, i)
-                    continue
-                }
-
-                if let d = Double(param) {
-                    set(localName, d)
-                    continue
-                }
-
-                switch param {
-                case "true", "True", "TRUE":
-                    set(localName, true)
-                case "false", "False", "FALSE":
-                    set(localName, false)
-                default:
-                    set(localName, param)
-                }
-
-            }
-        }
-
-        if !XMLRPCManager.instance.bind(function: "paramUpdate", cb: paramUpdateCallback) {
-            ROS_DEBUG("\(#function) Could not bind paramUpdate")
-        }
-    }
-
-    /// Get the list of all the parameters in the server
-    ///
-    /// - Parameter keys: The vector of all the keys
-    /// - Returns: false if the process fails
-    public static func getParamNames(keys: inout [String]) -> Bool {
-        let params = XmlRpcValue(str: ThisNode.getName())
-        do {
-            let parameters = try Master.shared.execute(method: "getParamNames", request: params).wait()
-
-            if !parameters.isArray {
-                return false
-            }
-            keys.removeAll()
-            for i in 0..<parameters.size() {
-                guard parameters[i].isString else {
-                    return false
-                }
-                keys.append(parameters[i].string)
-            }
-            return true
-
-        } catch {
-            ROS_ERROR("error during getParamNames \(error)")
-        }
-        return false
-
-    }
-
-    /// Return value from parameter server, or default if unavailable.
-    ///
-    /// This method tries to retrieve the indicated parameter value from the
-    /// parameter server. If the parameter cannot be retrieved, \c default_val
-    /// is returned instead.
-    ///
-    /// - parameter name: The key to be searched on the parameter server.
-    /// - parameter defaultValue: Value to return if the server doesn't contain this
-    /// parameter.
-    ///
-    /// - returns: The parameter value retrieved from the parameter server, or
-    /// defaultValue if unavailable.
-
-    static func param<T>(name: String, defaultValue: T) -> T {
-        var value = defaultValue
-        _ = param(name: name, value: &value, defaultValue: defaultValue )
-        return value
-    }
-
-    /// Assign value from parameter server, with default.
-    ///
-    /// This method tries to retrieve the indicated parameter value from the
-    /// parameter server, storing the result in param_val.  If the value
-    /// cannot be retrieved from the server, default_val is used instead.
-
-    /// - Parameter param_name: The key to be searched on the parameter server.
-    /// - Parameter param_val: Storage for the retrieved value.
-    /// - Parameter default_val: Value to use if the server doesn't contain this
-    /// parameter.
-    /// - Returns: `true` if the parameter was retrieved from the server, `false` otherwise.
-
-    static func param<T>(name: String, value: inout T, defaultValue: T) -> Bool {
-        if has(key: name) {
-            if get(name, &value) {
-                return true
-            }
-        }
-
-        value = defaultValue
-        return false
-    }
-
-    static func search(key: String, result: inout String) -> Bool {
-        return search(ns: Ros.ThisNode.getName(), key: key, result: &result)
-    }
-
-    static func search(ns: String, key: String, result: inout String) -> Bool {
-
-        // searchParam needs a separate form of remapping -- remapping on the unresolved name, rather than the
-        // resolved one.
-
-        var remapped = key
-        if let it = Names.getUnresolvedRemappings()[key] {
-            remapped = it
-        }
-
-        let params = XmlRpcValue(anyArray: [ns, remapped])
-
-        // We don't loop here, because validateXmlrpcResponse() returns false
-        // both when we can't contact the master and when the master says, "I
-        // don't have that param."
-
-        do {
-            let payload = try Master.shared.execute(method: "searchParam", request: params).wait()
-            result = payload.string
-        } catch {
-            ROS_ERROR("error during searchParam \(error)")
-            return false
-        }
-
-        return true
-    }
 
 }
 

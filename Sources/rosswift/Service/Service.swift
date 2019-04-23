@@ -15,7 +15,10 @@ public struct Service {
 
     public static func call<MReq: ServiceMessage, MRes: ServiceMessage>(serviceName: String, req: MReq) -> EventLoopFuture<MRes?> {
         let node = Ros.NodeHandle()
-        let client = node.serviceClient(service: Ros.Names.resolve(name: serviceName), md5sum: MReq.srvMd5sum)
+
+        // name is resolved in serviceClient
+
+        let client = node.serviceClient(service: serviceName, md5sum: MReq.srvMd5sum)
         return client.call(req: req)
     }
 
@@ -23,9 +26,10 @@ public struct Service {
         return call(serviceName: name, req: service.request, response: &service.response)
     }
 
-    static func call<MReq: ServiceMessage, MRes: ServiceMessage>(serviceName: String, req: MReq, response: inout MRes) -> Bool {
-        let res: EventLoopFuture<MRes?> = call(serviceName: serviceName, req: req)
+    static func call<MReq: ServiceMessage, MRes: ServiceMessage>(serviceName: String, req: MReq, response: inout MRes)  -> Bool {
         do {
+            let res: EventLoopFuture<MRes?> = call(serviceName: serviceName, req: req)
+
             if let resp = try res.wait() {
                 response = resp
                 return true
@@ -77,7 +81,7 @@ public struct Service {
         }
 
         if printed && Ros.isRunning {
-            ROS_DEBUG("waitForService: Service [\(mappedNames)] is now available.")
+            ROS_DEBUG("waitForService: Service [\(String(describing: mappedNames))] is now available.")
         }
 
         return result
@@ -95,7 +99,10 @@ public struct Service {
     /// - Returns: true if the service is up and available, false otherwise
 
     static func exists(serviceName: String, printFailureReason: Bool) -> Bool {
-        let mappedName = Ros.Names.resolve(name: serviceName)
+        guard let mappedName = Ros.Names.resolve(name: serviceName) else {
+            return false
+        }
+        
         if let server = ServiceManager.instance.lookupService(name: mappedName) {
             let keymap = ["probe": "1", "md5sum": "*", "callerid": Ros.ThisNode.getName(), "service": mappedName]
             let transport = Nio.TransportTCP(pipeline: [ByteToMessageHandler(Nio.MessageDelimiterCodec()),

@@ -10,7 +10,7 @@ import StdMsgs
 
 public struct SubscribeOptions<M: Message> {
     var topic: String
-    var transportHints: TransportHints?
+    let transportHints = TransportHints()
     let helper: SubscriptionCallbackHelper 
     var trackedObject: AnyObject?
     var allowConcurrentCallbacks = false
