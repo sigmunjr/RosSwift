@@ -13,7 +13,18 @@ import BinaryCoder
 
 public struct Service {
 
-    public static func call<MReq: ServiceMessage, MRes: ServiceMessage>(serviceName: String, req: MReq) -> EventLoopFuture<MRes?> {
+    /// Invoke an RPC service.
+    ///
+    /// This method invokes an RPC service on a remote server,
+    /// looking up the service location first via the master.
+    ///
+    /// - Parameters:
+    ///     - serviceName: The name of the service.
+    ///     - req: The request message
+    /// - Returns: A future with the response
+
+
+    public static func call<MReq: ServiceMessage, MRes: ServiceMessage>(serviceName: String, req: MReq) -> EventLoopFuture<MRes> {
         let node = Ros.NodeHandle()
 
         // name is resolved in serviceClient
@@ -28,17 +39,12 @@ public struct Service {
 
     static func call<MReq: ServiceMessage, MRes: ServiceMessage>(serviceName: String, req: MReq, response: inout MRes)  -> Bool {
         do {
-            let res: EventLoopFuture<MRes?> = call(serviceName: serviceName, req: req)
-
-            if let resp = try res.wait() {
-                response = resp
-                return true
-            }
+            let resp: MRes = try call(serviceName: serviceName, req: req).wait()
+            response = resp
+            return true
         } catch {
             return false
         }
-        return false
-
     }
 
     /// Wait for a service to be advertised and available.  Blocks until it is.

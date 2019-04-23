@@ -311,6 +311,7 @@ struct XMLRPCClient {
                     ROS_ERROR("write failed to \(channel.remoteAddress!) [\(error)]")
                     promise.fail(MasterError.writeError("write failed to \(channel.remoteAddress!) [\(error)]"))
                 }
+
                 channel.closeFuture.whenComplete { result in
                     // FIXME: check result 
 
@@ -338,15 +339,23 @@ struct XMLRPCClient {
 
         }
 
-        func getTopics() -> [TopicInfo]? {
+//        func getTopics() -> [TopicInfo]? {
+//            let args = XmlRpcValue(array: [XmlRpcValue(str: Ros.ThisNode.getName()), XmlRpcValue(str: "")])
+//            do {
+//                let payload = try execute(method: "getPublishedTopics", request: args).wait()
+//                return payload.map { TopicInfo(name: $0[0].string, dataType: $0[1].string )}
+//            } catch {
+//                ROS_ERROR("getPublishedTopics failed: \(error)")
+//            }
+//            return nil
+//        }
+
+        func getTopics() -> EventLoopFuture<[TopicInfo]> {
             let args = XmlRpcValue(array: [XmlRpcValue(str: Ros.ThisNode.getName()), XmlRpcValue(str: "")])
-            do {
-                let payload = try execute(method: "getPublishedTopics", request: args).wait()
-                return payload.map { TopicInfo(name: $0[0].string, dataType: $0[1].string )}
-            } catch {
-                ROS_ERROR("getPublishedTopics failed: \(error)")
-            }
-            return nil
+            return execute(method: "getPublishedTopics", request: args).map({ (rpc) -> [TopicInfo] in
+                return rpc.map { TopicInfo(name: $0[0].string, dataType: $0[1].string )}
+            })
         }
+
 
     }

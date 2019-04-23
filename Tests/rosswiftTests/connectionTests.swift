@@ -112,10 +112,13 @@ class connectionTests: XCTestCase {
             }
         }
 
-        let topics = Master.shared.getTopics()
+        guard let topics = try? Master.shared.getTopics().wait() else {
+            XCTFail()
+            return
+        }
 
         for topic in advertised_topics {
-            XCTAssert(topics!.contains { $0.name == topic })
+            XCTAssert(topics.contains { $0.name == topic })
         }
     }
 
@@ -217,7 +220,7 @@ class connectionTests: XCTestCase {
 
         do {
             let pub1 = n.advertise(topic: "/test", message: std_msgs.float64.self)
-
+            
             do {
                 let pub2 = n.advertise(topic: "/test", message: std_msgs.float64.self)
 

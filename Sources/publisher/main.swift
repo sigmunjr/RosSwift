@@ -75,12 +75,10 @@ guard let n = Ros.NodeHandle(ns: "") else {
 }
 
 let req = AddTwoIntsRequest(a: 34, b: 22)
-do {
-    if let res : AddTwoIntsResponse = try Service.call(serviceName: "/add_two_ints", req: req).wait() {
-        print("\(req.a) + \(req.b) = \(res.sum)")
-    }
-} catch {
-    print("AddTwoIntsResponse failed: \(error)" )
+if let res : AddTwoIntsResponse = try? Service.call(serviceName: "/add_two_ints", req: req).wait() {
+    print("\(req.a) + \(req.b) = \(res.sum)")
+} else {
+    print("AddTwoIntsResponse failed")
 }
 
 
@@ -119,14 +117,10 @@ guard let twist_pub = n.advertise(topic: "/twait", message: geometry_msgs.TwistS
 
 let request = TestStringString.Request("request from self")
 
-do {
-    if let respons : TestStringString.Response = try Service.call(serviceName: "echo", req: request).wait() {
-        print(respons)
-    } else {
-        print("call returned nil")
-    }
-} catch {
-    print("no response: \(error)")
+if let respons : TestStringString.Response = try? Service.call(serviceName: "echo", req: request).wait() {
+    print(respons)
+} else {
+    print("call returned nil")
 }
 
 var parameter: Int = 0

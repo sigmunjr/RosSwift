@@ -10,7 +10,7 @@ import NIO
 
 extension Ros {
 
-    struct Network {
+    enum Network {
         static var gHost = ""
         static var gTcprosServerPort: UInt16 = 0
 

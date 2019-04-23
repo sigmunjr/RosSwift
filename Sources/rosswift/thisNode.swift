@@ -9,32 +9,43 @@ import Foundation
 import RosTime
 
 extension Ros {
+
+    static let thisNode = ThisNode()
+
     final class ThisNode {
-        static let instance = ThisNode()
+
         var name = "empty"
         public var namespace = "/"
 
-        private init() {
+        fileprivate init() {
         }
 
-        class func getName() -> String {
-            return instance.name
-        }
-
-        class func getNamespace() -> String {
-            return instance.namespace
-        }
-
-        class func getAdvertisedTopics() -> [String] {
+        /// Get the list of topics advertised by this node
+        ///
+        public class func getAdvertisedTopics() -> [String] {
             return TopicManager.instance.getAdvertised()
         }
 
-        class func getSubscribedTopics(topics: inout [String]) -> [String] {
+        /// Returns the name of the current node.
+
+        public class func getName() -> String {
+            return thisNode.name
+        }
+
+        /// Returns the namespace of the current node
+
+        public class func getNamespace() -> String {
+            return thisNode.namespace
+        }
+
+        /// Get the list of topics subscribed to by this node
+
+        public class func getSubscribedTopics(topics: inout [String]) -> [String] {
             return TopicManager.instance.getSubscribed()
         }
 
-        class func initialize(name: String, remappings: StringStringMap, options: InitOption) {
-            instance.initialize(name: name, remappings: remappings, options: options)
+        internal class func initialize(name: String, remappings: StringStringMap, options: InitOption) {
+            thisNode.initialize(name: name, remappings: remappings, options: options)
         }
 
         private func initialize(name inName: String, remappings: StringStringMap, options: InitOption) {

@@ -229,23 +229,23 @@ class paramTests: XCTestCase {
         }
         var result = ""
 
-        n.setParam("/s_i", 1)
-        let ok = n.searchParam(key: "s_i", result: &result)
+        n.set(parameter: "/s_i", value: 1)
+        let ok = n.search(parameter: "s_i", result: &result)
         XCTAssert(ok)
         XCTAssertEqual(result, "/s_i")
-        XCTAssert(n.deleteParam("/s_i"))
+        XCTAssert(n.delete(paramter: "/s_i"))
 
-        n.setParam("/a/b/s_i", 1)
-        XCTAssert(n.searchParam(key: "s_i", result: &result))
+        n.set(parameter: "/a/b/s_i", value: 1)
+        XCTAssert(n.search(parameter: "s_i", result: &result))
         XCTAssertEqual(result, "/a/b/s_i")
-        XCTAssert(n.deleteParam("/a/b/s_i"))
+        XCTAssert(n.delete(paramter:"/a/b/s_i"))
 
-        n.setParam("/a/b/c/d/e/f/s_i", 1)
-        XCTAssert(n.searchParam(key: "s_i", result: &result))
+        n.set(parameter: "/a/b/c/d/e/f/s_i", value: 1)
+        XCTAssert(n.search(parameter: "s_i", result: &result))
         XCTAssertEqual(result, "/a/b/c/d/e/f/s_i")
-        XCTAssert(n.deleteParam("/a/b/c/d/e/f/s_i"))
+        XCTAssert(n.delete(paramter:"/a/b/c/d/e/f/s_i"))
 
-        XCTAssertFalse(n.searchParam(key: "s_j", result: &result))
+        XCTAssertFalse(n.search(parameter: "s_j", result: &result))
     }
 
     func testsearchParamNodeHandleWithRemapping()
@@ -258,10 +258,10 @@ class paramTests: XCTestCase {
         }
         var result = ""
 
-        n.setParam("/s_c", 1)
-        XCTAssertFalse(n.searchParam(key: "s_c", result: &result))
-        n.setParam("/s_b", 1)
-        XCTAssert(n.searchParam(key: "s_c", result: &result))
+        n.set(parameter: "/s_c", value: 1)
+        XCTAssertFalse(n.search(parameter: "s_c", result: &result))
+        n.set(parameter: "/s_b", value: 1)
+        XCTAssert(n.search(parameter: "s_c", result: &result))
         print("RESULT \(result)")
     }
 

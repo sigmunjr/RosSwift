@@ -9,9 +9,73 @@ import BinaryCoder
 import Foundation
 
 public protocol TimeBase: Comparable, BinaryCodable {
+    var nanoseconds: UInt64 {get}
+    var sec: UInt32 { get }
+    var nsec: UInt32 { get }
+    init()
+    init(sec: UInt32, nsec: UInt32)
+    init(seconds: TimeInterval)
+    init(nanosec: UInt64)
+    func isZero() -> Bool
+    func toNSec() -> UInt64
+    func toSec() -> TimeInterval
+    static func now() -> Self
+    static func distantFuture() -> Self
 }
 
+public extension TimeBase {
+
+    var sec: UInt32 {
+        return UInt32(nanoseconds / 1_000_000_000)
+    }
+
+    var nsec: UInt32 {
+        return UInt32(nanoseconds % 1_000_000_000)
+    }
+
+    init() {
+        self.init(nanosec: 0)
+    }
+
+    init(sec: UInt32, nsec: UInt32) {
+        let nano = UInt64(sec) * 1_000_000_000 + UInt64(nsec)
+        self.init(nanosec: nano)
+    }
+
+    init(seconds: TimeInterval) {
+        let nano = UInt64( floor(seconds * 1_000_000_000) )
+        self.init(nanosec: nano)
+    }
+
+    func isZero() -> Bool {
+        return nanoseconds == 0
+    }
+
+    func toNSec() -> UInt64 {
+        return nanoseconds
+    }
+
+    func toSec() -> TimeInterval {
+        return TimeInterval(sec) * 1e-9
+    }
+
+    static func < (lhs: Self, rhs: Self) -> Bool {
+        return lhs.nanoseconds < rhs.nanoseconds
+    }
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        return lhs.nanoseconds == rhs.nanoseconds
+    }
+
+
+    static func distantFuture() -> Self {
+        return Self(nanosec: UInt64.max)
+    }
+}
+
+
 public struct RosTime {
+
     static func rosWalltime() -> (sec: UInt32, nsec: UInt32) {
         var start = timespec()
         clock_gettime(CLOCK_REALTIME, &start)
@@ -146,12 +210,18 @@ public struct RosTime {
     }
 
     public struct WallTimer {
+
         public init() {
             fatalError("not implemented")
         }
     }
 
-    public final class WallTime: TimeBase {
+    public struct WallTime: TimeBase {
+        public var nanoseconds: UInt64
+
+        public init(nanosec: UInt64) {
+            nanoseconds = nanosec
+        }
 
         public static func now() -> WallTime {
             let time = rosWalltime()
@@ -168,64 +238,20 @@ public struct RosTime {
 
     }
 
-    public class TimeBase: Comparable, BinaryCodable {
 
-        public final var nanoseconds: UInt64
+    public struct Time: TimeBase {
 
-        public final var sec: UInt32 {
-            return UInt32(nanoseconds / 1_000_000_000)
-        }
-
-        public final var nsec: UInt32 {
-            return UInt32(nanoseconds % 1_000_000_000)
-        }
-
-        public init() {
-            nanoseconds = 0
-        }
-
-        public init(sec: UInt32, nsec: UInt32) {
-            self.nanoseconds = UInt64(sec) * 1_000_000_000 + UInt64(nsec)
-        }
-
-        public init(seconds: TimeInterval) {
-            nanoseconds = UInt64( floor(seconds * 1_000_000_000) )
-        }
-
-        public init(nanosec: UInt64) {
-            nanoseconds = nanosec
-        }
-
-        public final func isZero() -> Bool {
-            return nanoseconds == 0
-        }
-
-        public final func toNSec() -> UInt64 {
-            return nanoseconds
-        }
-
-        public final func toSec() -> TimeInterval {
-            return TimeInterval(sec) * 1e-9
-        }
-
-        public static let distantFuture = TimeBase(nanosec: UInt64.max)
-
-        public static func < (lhs: TimeBase, rhs: TimeBase) -> Bool {
-            return lhs.nanoseconds < rhs.nanoseconds
-        }
-
-        public static func == (lhs: TimeBase, rhs: TimeBase) -> Bool {
-            return lhs.nanoseconds == rhs.nanoseconds
-        }
-    }
-
-    public final class Time: TimeBase {
+        public let nanoseconds: UInt64
 
         public static var useSimTime = true
         public static var gStopped = false
         public static var gInitialized = false
         public static var simTime = Time()
         public static var simTimeQueue = DispatchQueue(label: "g_sim_time_mutex")
+
+        public init(nanosec: UInt64) {
+            nanoseconds = nanosec
+        }
 
         public static func initialize() {
             gStopped = false
@@ -288,7 +314,12 @@ public struct RosTime {
 
     }
 
-    public final class SteadyTime: TimeBase {
+    public struct SteadyTime: TimeBase {
+        public let nanoseconds: UInt64
+
+        public init(nanosec: UInt64) {
+            nanoseconds = nanosec
+        }
 
         public static func now() -> SteadyTime {
             var start = timespec()

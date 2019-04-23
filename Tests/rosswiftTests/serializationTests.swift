@@ -61,7 +61,15 @@ class serializationTests: XCTestCase {
     }
 
 
-    func callback<T : Message>(_ val: T) {
+    func callbackB(_ val: Bool) {
+
+    }
+
+    func callbackI(_ val: Int32) {
+
+    }
+
+    func callbackD(_ val: Double) {
 
     }
 
@@ -77,9 +85,9 @@ class serializationTests: XCTestCase {
 
 
 
-        let s1 = n.subscribe(Bool.self, topic: "test_bool", queueSize: 1, callback: callback)
-        let s2 = n.subscribe(Int32.self, topic: "test_int", queueSize: 1, callback: callback)
-        let s3 = n.subscribe(Double.self, topic: "test_double", queueSize: 1, callback: callback)
+        let s1 = n.subscribe(topic: "test_bool", queueSize: 1, callback: callbackB)
+        let s2 = n.subscribe(topic: "test_int", queueSize: 1, callback: callbackI)
+        let s3 = n.subscribe(topic: "test_double", queueSize: 1, callback: callbackD)
         XCTAssertEqual(s1!.getNumPublishers(),1)
         XCTAssertEqual(s2!.getNumPublishers(),1)
         XCTAssertEqual(s3!.getNumPublishers(),1)

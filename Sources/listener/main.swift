@@ -41,14 +41,10 @@ guard let n = Ros.NodeHandle(ns: "~") else {
 }
 
 let request = TestStringString.Request("request from listener")
-do {
-    if let respons : TestStringString.Response = try Service.call(serviceName: "echo", req: request).wait() {
-        print(respons)
-    } else {
-        print("call returned nil")
-    }
-} catch {
-    print("no response: \(error)")
+if let respons : TestStringString.Response = try? Service.call(serviceName: "echo", req: request).wait() {
+    print(respons)
+} else {
+    print("call returned nil")
 }
 
 let a = A(value: 345)
