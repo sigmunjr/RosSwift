@@ -14,18 +14,6 @@ struct TransportTCP {
     static var useIPv6 = false
 }
 
-func basicSigintHandler(signal: Int32) {
-    ROS_INFO("SIGINT")
-    Ros.requestShutdown()
-}
-
-func atexitCallback() {
-    if Ros.isRunning && !Ros.isShuttingDown.load() {
-        ROS_DEBUG("shutting down due to exit() or end of main() without cleanup of all NodeHandles")
-        Ros.isStarted = false
-        Ros.shutdown()
-    }
-}
 
 func amIBeingDebugged() -> Bool {
     #if os(OSX)
@@ -40,41 +28,135 @@ func amIBeingDebugged() -> Bool {
     #endif
 }
 
-public struct Ros {
-        public enum InitOptions {
-            case noSigintHandler
-            case anonymousName
-            case noRosout
-        }
+public final class Ros: Hashable {
+
+    public static func == (lhs: Ros, rhs: Ros) -> Bool {
+        return lhs === rhs
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        let i = ObjectIdentifier(self)
+        hasher.combine(i)
+    }
+
+
+    public enum InitOptions {
+        case noSigintHandler
+        case anonymousName
+        case noRosout
+    }
+
+    fileprivate static var globalRos = Set<Ros>()
+    fileprivate static var atexitRegistered = false
 
     public typealias InitOption = Set<InitOptions>
 
-    static let gGlobalQueue = CallbackQueue()
-    static let gInternalCallbackQueue = CallbackQueue()
+    let gGlobalQueue = CallbackQueue()
+    let gInternalCallbackQueue = CallbackQueue()
+    let initOptions: InitOption
 
-    static var rosoutAppender: ROSOutAppender?
-    static var fileLog: FileLog?
-    static var initOptions = InitOption()
-    static var isShutdownRequested = false
-    static var isShuttingDown = Atomic<Bool>(value: false)
-    static var isRunning = false
-    static var isStarted = false
-    static var isInitialized = false
-    static var atexitRegistered = false
-    static let logg = HeliumLogger(.debug)
+    var rosoutAppender: ROSOutAppender?
+    var fileLog: FileLog?
+    var isShutdownRequested = false
+    var isShuttingDown = Atomic<Bool>(value: false)
+    var isRunning = false
+    var isStarted = false
+    var isInitialized = false
+    let logg = HeliumLogger(.debug)
 
-    public static var ok: Bool { return isRunning }
+    public var ok: Bool { return isRunning }
 
-    static func getGlobalCallbackQueue() -> CallbackQueue {
+    public init(name: String, remappings: StringStringMap = [:], options: InitOption = []) {
+        initOptions = options
+        isRunning = true
+
+        check_ipv6_environment()
+        Network.initialize(remappings: remappings)
+        Master.shared.initialize(remappings: remappings)
+        ThisNode.initialize(name: name, remappings: remappings, options: options)
+        fileLog = FileLog(remappings: remappings)
+        Param.initialize(remappings: remappings)
+
+        isInitialized = true
+
+        if !Ros.atexitRegistered {
+            Ros.atexitRegistered = true
+            atexit(atexitCallback)
+        }
+
+        Ros.globalRos.insert(self)
+    }
+
+    public convenience init(argv: inout [String], name: String, options: InitOption = []) {
+
+
+        var remappings = StringStringMap()
+        var unhandled = [String]()
+
+        for arg in argv {
+            if let pos = arg.range(of: ":=") {
+                let local = String(arg.prefix(upTo: pos.lowerBound))
+                let external = String(arg.suffix(from: pos.upperBound))
+                ROS_DEBUG("remap \(local) => \(external)")
+                remappings[local] = external
+            } else {
+                unhandled.append(arg)
+            }
+        }
+        argv = unhandled
+        self.init(name: name, remappings: remappings, options: options)
+
+
+        Log.logger = logg
+        #if os(Linux)
+        logg.colored = true
+        logg.details = true
+        #else
+        logg.colored = !amIBeingDebugged()
+        logg.details = amIBeingDebugged()
+        #endif
+        logg.dateFormat = "HH:mm:ss.SSS"
+        ROS_INFO("Ros is initializing")
+
+    }
+
+
+
+//    public init() {
+//        if !Ros.atexitRegistered {
+//            Ros.atexitRegistered = true
+//            atexit(atexitCallback)
+//        }
+//    }
+
+    deinit {
+        shutdown()
+        Ros.globalRos.remove(self)
+    }
+
+    public func createNode() -> NodeHandle {
+        return NodeHandle(ros: self)
+    }
+
+
+    public func createNode(ns: String, remappings: StringStringMap? = nil) -> NodeHandle? {
+        return NodeHandle(ros: self, ns: ns, remappings: remappings)
+    }
+
+    public func createNode(parent: Ros.NodeHandle, ns: String = "") -> NodeHandle {
+        return NodeHandle(parent: parent, ns: ns)
+    }
+
+    func getGlobalCallbackQueue() -> CallbackQueue {
         return gGlobalQueue
     }
 
-    static func requestShutdown() {
+    func requestShutdown() {
         isShutdownRequested = true
         shutdown()
     }
 
-    static func shutdownCallback(params: XmlRpcValue) -> XmlRpcValue {
+    func shutdownCallback(params: XmlRpcValue) -> XmlRpcValue {
         var count = 0
         switch params.getType() {
         case  .array(let a):
@@ -88,7 +170,7 @@ public struct Ros {
             ROS_INFO("Reason given for shutdown: \(reason)")
             // we have to avoid calling wait inside an EventLoop
             DispatchQueue(label: "shutdown").async {
-                requestShutdown()
+                self.requestShutdown()
             }
         }
 
@@ -110,39 +192,39 @@ public struct Ros {
     /// (a set of bit flags from `Ros.InitOption`)
     /// - Returns: a future that will succeed at shutdown
 
-    public static func initialize(argv: inout [String],
-                                  name: String,
-                                  options: InitOption = .init()) -> EventLoopFuture<Void> {
-
-        Log.logger = logg
-        #if os(Linux)
-        logg.colored = true
-        logg.details = true
-        #else
-        logg.colored = !amIBeingDebugged()
-        logg.details = amIBeingDebugged()
-        #endif
-        logg.dateFormat = "HH:mm:ss.SSS"
-        ROS_INFO("Ros is initializing")
-
-        var remappings = StringStringMap()
-        var unhandled = [String]()
-
-        for arg in argv {
-            if let pos = arg.range(of: ":=") {
-                let local = String(arg.prefix(upTo: pos.lowerBound))
-                let external = String(arg.suffix(from: pos.upperBound))
-                ROS_DEBUG("remap \(local) => \(external)")
-                remappings[local] = external
-            } else {
-                unhandled.append(arg)
-            }
-        }
-        argv = unhandled
-        return initialize(remappings: remappings, name: name, options: options)
-    }
-
-    static let promise: EventLoopPromise<Void> = threadGroup.next().makePromise()
+//    public func initialize(argv: inout [String],
+//                                  name: String,
+//                                  options: InitOption = .init()) -> EventLoopFuture<Void> {
+//
+//        Log.logger = logg
+//        #if os(Linux)
+//        logg.colored = true
+//        logg.details = true
+//        #else
+//        logg.colored = !amIBeingDebugged()
+//        logg.details = amIBeingDebugged()
+//        #endif
+//        logg.dateFormat = "HH:mm:ss.SSS"
+//        ROS_INFO("Ros is initializing")
+//
+//        var remappings = StringStringMap()
+//        var unhandled = [String]()
+//
+//        for arg in argv {
+//            if let pos = arg.range(of: ":=") {
+//                let local = String(arg.prefix(upTo: pos.lowerBound))
+//                let external = String(arg.suffix(from: pos.upperBound))
+//                ROS_DEBUG("remap \(local) => \(external)")
+//                remappings[local] = external
+//            } else {
+//                unhandled.append(arg)
+//            }
+//        }
+//        argv = unhandled
+//        return initialize(remappings: remappings, name: name, options: options)
+//    }
+//
+//    private let promise: EventLoopPromise<Void> = threadGroup.next().makePromise()
 
     /// Alternate ROS initialization function.
     ///
@@ -153,31 +235,31 @@ public struct Ros {
     /// - Returns: a future that will succeed at shutdown
 
 
-    public static func initialize(remappings: StringStringMap,
-                                  name: String,
-                                  options: InitOption) -> EventLoopFuture<Void> {
+//    public func initialize(remappings: StringStringMap,
+//                                  name: String,
+//                                  options: InitOption) -> EventLoopFuture<Void> {
+//
+//        if !Ros.atexitRegistered {
+//            Ros.atexitRegistered = true
+//            atexit(atexitCallback)
+//        }
+//
+//        initOptions = options
+//        isRunning = true
+//
+//        check_ipv6_environment()
+//        Network.initialize(remappings: remappings)
+//        Master.shared.initialize(remappings: remappings)
+//        ThisNode.initialize(name: name, remappings: remappings, options: options)
+//        fileLog = FileLog(remappings: remappings)
+//        Param.initialize(remappings: remappings)
+//
+//        isInitialized = true
+//
+//        return promise.futureResult
+//    }
 
-        if !atexitRegistered {
-            atexitRegistered = true
-            atexit(atexitCallback)
-        }
-
-        initOptions = options
-        isRunning = true
-
-        check_ipv6_environment()
-        Network.initialize(remappings: remappings)
-        Master.shared.initialize(remappings: remappings)
-        ThisNode.initialize(name: name, remappings: remappings, options: options)
-        fileLog = FileLog(remappings: remappings)
-        Param.initialize(remappings: remappings)
-
-        isInitialized = true
-
-        return Ros.promise.futureResult
-    }
-
-    static func check_ipv6_environment() {
+    func check_ipv6_environment() {
 //        if let envIPv6 = getenv("ROS_IPV6") {
 //            let env = String(utf8String: envIPv6)
 //            let useIPv6 = env == "on"
@@ -188,22 +270,22 @@ public struct Ros {
         return argv.filter { $0.contains(":=") }
     }
 
-    public static func waitForShutdown() {
+    public func waitForShutdown() {
         while isRunning {
             _ = RosTime.WallDuration(seconds: 0.05).sleep()
         }
-        promise.succeed(())
+//        promise.succeed(())
     }
 
-    private static func kill() {
+    private func kill() {
         ROS_ERROR("Caught kill, stopping...")
         DispatchQueue.main.async {
-            isShutdownRequested = true
-            requestShutdown()
+            self.isShutdownRequested = true
+            self.requestShutdown()
         }
     }
 
-    static func start() {
+    private func start() {
         ROS_INFO("starting Ros")
         if isStarted {
             return
@@ -251,8 +333,8 @@ public struct Ros {
             enableDebug.lowercased() == "true" || enableDebug == "1" {
 
             let closeServiceName = Names.resolve(name: "~debug/close_all_connections")!
-            _ = ServiceManager.instance.advertiseService(.init(service: closeServiceName,
-                                                                   callback: closeAllConnections))
+            let options = AdvertiseServiceOptions(service: closeServiceName, callback: closeAllConnections)
+            _ = ServiceManager.instance.advertiseService(options)
         }
 
         let useSimTime = Param.param(name: "/use_sim_time", defaultValue: false)
@@ -261,7 +343,7 @@ public struct Ros {
         }
 
         if useSimTime {
-            let ops = SubscribeOptions(topic: "/clock", queueSize: 1, callback: clockCallback)
+            let ops = SubscribeOptions(topic: "/clock", queueSize: 1, queue: getGlobalCallbackQueue(), callback: clockCallback)
             if !TopicManager.instance.subscribeWith(options: ops) {
                 ROS_ERROR("could not subscribe to /clock")
             }
@@ -279,61 +361,23 @@ public struct Ros {
     }
 
 
-    struct EmptyRequest: ServiceMessage {
-        static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
-        static let srvMd5sum = Empty.md5sum
-        static let srvDatatype = Empty.datatype
-        static let datatype = "roscpp/EmptyRequest"
-        static let hasHeader = false
-        static let definition = "\n"
-    }
 
-    struct EmptyResponse: ServiceMessage {
-        static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
-        static let srvMd5sum = Empty.md5sum
-        static let srvDatatype = Empty.datatype
-        static let datatype = "roscpp/SetLoggerLevelResponse"
-        static let hasHeader = false
-        static let definition = "\n"
-    }
-
-    struct Empty {
-        typealias Request = EmptyRequest
-        typealias Response = EmptyResponse
-
-        static let md5sum = "d41d8cd98f00b204e9800998ecf8427e"
-        static let datatype = "roscpp/Empty"
-    }
-
-    static func closeAllConnections(x: EmptyRequest) -> EmptyResponse? {
+    func closeAllConnections(x: EmptyRequest) -> EmptyResponse? {
         ROS_INFO("close_all_connections service called, closing connections")
         ConnectionManager.instance.clear(reason: .transportDisconnect)
         return EmptyResponse()
     }
 
-    struct RosgraphMsgs {
-        struct Clock: Message {
-            static let md5sum = "a9c97c1d230cfc112e270351a944ee47"
-            static let datatype = "rosgraph_msgs/Clock"
-            static let definition = """
-                # roslib/Clock is used for publishing simulated time in ROS. \n
-                # This message simply communicates the current time.\n
-                # For more information, see http://www.ros.org/wiki/Clock\n
-                time clock\n
-                """
-            static let hasHeader = false
 
-            var time: RosTime.Time
-        }
+    func clockCallback(msg: RosgraphMsgs.Clock) {
+        Time.setNow(msg.time)
     }
 
-    static func clockCallback(msg: RosgraphMsgs.Clock) {
-        RosTime.Time.setNow(msg.time)
-    }
+    func shutdown() {
 
-    static func shutdown() {
 
         if isShuttingDown.compareAndExchange(expected: false, desired: true) {
+            ROS_DEBUG("ros shutdown")
             if isStarted {
                 TopicManager.instance.shutdown()
                 ServiceManager.instance.shutdown()
@@ -343,22 +387,40 @@ public struct Ros {
 
             isStarted = false
             isRunning = false
-            promise.succeed(())
+//            promise.succeed(())
             isShuttingDown.store(false)
         }
     }
 
-    static func spin() {
+    func spin() {
         let spinner = SingleThreadSpinner()
         spin(spinner)
     }
 
-    static func spin(_ spinner: Spinner) {
-        spinner.spin(queue: nil)
+    func spin(_ spinner: Spinner) {
+        spinner.spin(ros: self, queue: nil)
     }
 
-    static func spinOnce() {
-        Ros.gGlobalQueue.callAvailable()
+    func spinOnce() {
+        gGlobalQueue.callAvailable()
     }
 
+
+
+}
+
+
+func basicSigintHandler(signal: Int32) {
+    ROS_INFO("SIGINT")
+    Ros.globalRos.forEach{ $0.requestShutdown() }
+}
+
+func atexitCallback() {
+    Ros.globalRos.forEach { ros in
+        if ros.isRunning && !ros.isShuttingDown.load() {
+            ROS_DEBUG("shutting down due to exit() or end of main() without cleanup of all NodeHandles")
+            ros.isStarted = false
+            ros.shutdown()
+        }
+    }
 }

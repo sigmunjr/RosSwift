@@ -47,9 +47,12 @@ class paramTests: XCTestCase {
     ]
 
 
+    var ros: Ros!
+
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
-        let _ = Ros.initialize(argv: &CommandLine.arguments, name: "paramTests")
+
+        ros = Ros(argv: &CommandLine.arguments, name: "paramTests")
         Ros.Param.set(key: "string", value: "test")
         Ros.Param.set(key: "int", value: Int(10))
         Ros.Param.set(key: "double", value: Double(10.5))
@@ -60,7 +63,7 @@ class paramTests: XCTestCase {
 
     override func tearDown() {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
-        Ros.shutdown()
+        ros.shutdown()
     }
 
     func testAllParamTypes() {
@@ -223,7 +226,7 @@ class paramTests: XCTestCase {
 
     func testsearchParamNodeHandle()
     {
-        guard let n = Ros.NodeHandle(ns: "/a/b/c/d/e/f") else {
+        guard let n = ros.createNode(ns: "/a/b/c/d/e/f") else {
             XCTFail()
             return
         }
@@ -252,7 +255,7 @@ class paramTests: XCTestCase {
     {
         _ = Ros.Param.del(key: "/s_b")
         let remappings = ["s_c":"s_b"]
-        guard let n = Ros.NodeHandle(ns: "/a/b/c/d/e/f", remappings: remappings) else {
+        guard let n = ros.createNode(ns: "/a/b/c/d/e/f", remappings: remappings) else {
             XCTFail()
             return
         }
@@ -548,7 +551,7 @@ class paramTests: XCTestCase {
 
     func testparamNodeHandleTemplateFunction()
     {
-        let nh = Ros.NodeHandle()
+        let nh = ros.createNode()
 
         XCTAssertEqual( nh.param( name: "string", defaultValue: "" ), "test" )
         XCTAssertEqual( nh.param( name: "gnirts", defaultValue: "test" ), "test" )

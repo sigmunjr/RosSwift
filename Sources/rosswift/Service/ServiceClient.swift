@@ -137,8 +137,8 @@ internal final class ServiceClient {
     }
 
 
-    func waitForExistence(timeout: RosTime.Duration = RosTime.Duration(seconds: -1)) -> Bool {
-        return Service.waitForService(serviceName: name, timeout: timeout)
+    func waitForExistence(ros: Ros, timeout: RosTime.Duration = RosTime.Duration(seconds: -1)) -> Bool {
+        return Service.waitForService(ros: ros, serviceName: name, timeout: timeout)
     }
 
     func exists() -> Bool {

@@ -24,8 +24,7 @@ public struct Service {
     /// - Returns: A future with the response
 
 
-    public static func call<MReq: ServiceMessage, MRes: ServiceMessage>(serviceName: String, req: MReq) -> EventLoopFuture<MRes> {
-        let node = Ros.NodeHandle()
+    public static func call<MReq: ServiceMessage, MRes: ServiceMessage>(node: Ros.NodeHandle, serviceName: String, req: MReq) -> EventLoopFuture<MRes> {
 
         // name is resolved in serviceClient
 
@@ -33,13 +32,13 @@ public struct Service {
         return client.call(req: req)
     }
 
-    static func call<Service: ServiceProt>(name: String, service: inout Service) -> Bool {
-        return call(serviceName: name, req: service.request, response: &service.response)
+    static func call<Service: ServiceProt>(node: Ros.NodeHandle, name: String, service: inout Service) -> Bool {
+        return call(node: node, serviceName: name, req: service.request, response: &service.response)
     }
 
-    static func call<MReq: ServiceMessage, MRes: ServiceMessage>(serviceName: String, req: MReq, response: inout MRes)  -> Bool {
+    static func call<MReq: ServiceMessage, MRes: ServiceMessage>(node: Ros.NodeHandle, serviceName: String, req: MReq, response: inout MRes)  -> Bool {
         do {
-            let resp: MRes = try call(serviceName: serviceName, req: req).wait()
+            let resp: MRes = try call(node: node, serviceName: serviceName, req: req).wait()
             response = resp
             return true
         } catch {
@@ -53,9 +52,9 @@ public struct Service {
     ///   - serviceName: Name of the service to wait for
     ///   - timeout: The amount of time to wait for, in milliseconds.  If timeout is -1, waits until the node is shutdown
     /// - Returns: true on success, false otherwise
-    static func waitForService(serviceName: String, timeout: Int32) -> Bool {
+    static func waitForService(ros: Ros, serviceName: String, timeout: Int32) -> Bool {
         let dur = RosTime.Duration(milliseconds: timeout)
-        return waitForService(serviceName: serviceName, timeout: dur )
+        return waitForService(ros: ros, serviceName: serviceName, timeout: dur )
     }
 
     /// Wait for a service to be advertised and available.  Blocks until it is.
@@ -64,12 +63,12 @@ public struct Service {
     /// - Parameter timeout: The amount of time to wait for before timing out.  If timeout is -1 (default),
     /// waits until the node is shutdown
     /// - Returns: true on success, false otherwise
-    static func waitForService(serviceName: String, timeout: RosTime.Duration = RosTime.Duration(seconds: TimeInterval(-1))) -> Bool {
+    static func waitForService(ros: Ros, serviceName: String, timeout: RosTime.Duration = RosTime.Duration(seconds: TimeInterval(-1))) -> Bool {
         let mappedNames = Ros.Names.resolve(name: serviceName)
         let startTime = RosTime.Time.now()
         var printed = false
         var result = false
-        while Ros.isRunning {
+        while ros.isRunning {
             if exists(serviceName: serviceName, printFailureReason: !printed) {
                 result = true
                 break
@@ -86,7 +85,7 @@ public struct Service {
             }
         }
 
-        if printed && Ros.isRunning {
+        if printed && ros.isRunning {
             ROS_DEBUG("waitForService: Service [\(String(describing: mappedNames))] is now available.")
         }
 

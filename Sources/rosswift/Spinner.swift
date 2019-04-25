@@ -16,21 +16,21 @@ protocol Spinner {
     /// Spin on a callback queue (defaults to the global one). Blocks until rosswift
     /// has been shutdown.
 
-    func spin(queue: CallbackQueue?)
+    func spin(ros: Ros, queue: CallbackQueue?)
 }
 
 /// Spinner which runs in a single thread.
 
 final class SingleThreadSpinner: Spinner {
 
-    func spin(queue: CallbackQueue? = nil) {
-        let useQueue = queue != nil ? queue! : Ros.getGlobalCallbackQueue()
+    func spin(ros: Ros, queue: CallbackQueue? = nil) {
+        let useQueue = queue != nil ? queue! : ros.getGlobalCallbackQueue()
         if !SpinnerMonitor.main.add(queue: useQueue, singleThreaded: true) {
             fatalError("SingleThreadedSpinner: \(DEFAULT_ERROR_MESSAGE) You might want to use a MultiThreadedSpinner instead.")
         }
 
         let timeout = RosTime.WallDuration(milliseconds: 100)
-        let n = Ros.NodeHandle()
+        let n = Ros.NodeHandle(ros: ros)
         while n.isOK {
             useQueue.callAvailable(timeout: timeout)
         }
@@ -51,7 +51,7 @@ final class MultiThreadedSpinner: Spinner {
         self.threadCount = threadCount
     }
 
-    func spin(queue: CallbackQueue? = nil) {
+    func spin(ros: Ros, queue: CallbackQueue? = nil) {
 
     }
 }
@@ -64,10 +64,10 @@ final class AsyncSpinnner {
     private var running = Atomic<Bool>(value: false)
     private let node: Ros.NodeHandle
 
-    init(threadCount: Int, queue: CallbackQueue? = nil) {
-        self.callbackQueue = queue != nil ? queue! : Ros.getGlobalCallbackQueue()
+    init(ros: Ros, threadCount: Int, queue: CallbackQueue? = nil) {
+        self.callbackQueue = queue != nil ? queue! : ros.getGlobalCallbackQueue()
         self.threadCount = threadCount != 0 ? threadCount : System.coreCount
-        self.node = Ros.NodeHandle()
+        self.node = Ros.NodeHandle(ros: ros)
     }
 
     deinit {

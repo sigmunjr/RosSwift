@@ -14,13 +14,15 @@ class NameRemappingWithNamespace: XCTestCase {
         ("testParameterRemapping",testParameterRemapping)
     ]
 
+    var ros: Ros!
 
     override func setUp() {
+        ros = Ros()
         var args = CommandLine.arguments + ["/a/test_full:=/b/test_full",
                                             "/a/test_local:=test_local2",
                                             "test_relative:=/b/test_relative"]
         Ros.thisNode.namespace = "a"
-        _ = Ros.initialize(argv: &args, name: "name_remapped_with_ns")
+        _ = ros.initialize(argv: &args, name: "name_remapped_with_ns")
         Ros.Param.set(key: "/b/test_full", value: "asdf")
         Ros.Param.set(key: "/a/test_local2", value: "asdf")
         Ros.Param.set(key: "/b/test_relative", value: "asdf")
@@ -28,7 +30,6 @@ class NameRemappingWithNamespace: XCTestCase {
 
     override func tearDown() {
         Ros.thisNode.namespace = ""
-
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 

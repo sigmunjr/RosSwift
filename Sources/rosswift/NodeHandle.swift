@@ -27,7 +27,7 @@ extension Ros {
         /// has not been called on this NodeHandle, to see whether it's yet time to exit.
         /// `ok` is false once either Ros.shutdown() or NodeHandle.shutdown() have been called
 
-        public var isOK: Bool { return Ros.isRunning && ok }
+        public var isOK: Bool { return ros.isRunning && ok }
 
         ///  the namespace associated with this NodeHandle.
         public private(set) var namespace: String = "/"
@@ -49,9 +49,12 @@ extension Ros {
             return Ros.refCount
         }
 
+        private let ros: Ros
+
         // MARK: Life
 
-        internal init() {
+        internal init(ros: Ros) {
+            self.ros = ros
             namespace = Ros.ThisNode.getNamespace()
             construct(ns: "")
         }
@@ -69,7 +72,8 @@ extension Ros {
         /// all topics/services/parameters will be prefixed with "/a/b/"
         ///     - remappings:    Remappings for this NodeHandle.
 
-        public init?(ns: String, remappings: StringStringMap? = nil) {
+        public init?(ros: Ros, ns: String, remappings: StringStringMap? = nil) {
+            self.ros = ros
             namespace = Ros.ThisNode.getNamespace()
             if ns.starts(with: "~") {
                 guard let resolved = Names.resolve(name: ns) else {
@@ -104,6 +108,7 @@ extension Ros {
         ///     - remappings:    Remappings for this NodeHandle.
 
         public init(parent: NodeHandle, ns: String = "", remappings: StringStringMap? = nil) {
+            self.ros = parent.ros
             self.namespace = parent.namespace
             self.remappings = parent.remappings
             self.callbackQueue = parent.callbackQueue
@@ -343,7 +348,7 @@ extension Ros {
         /// If none has been explicitly set, returns the global queue
 
         public func getCallbackQueue() -> CallbackQueueInterface {
-            return callbackQueue != nil ? callbackQueue! : Ros.getGlobalCallbackQueue()
+            return callbackQueue != nil ? callbackQueue! : ros.getGlobalCallbackQueue()
         }
 
 
@@ -604,7 +609,7 @@ extension Ros {
         public func subscribe<M: Message>(topic: String,
                                           queueSize: UInt32,
                                           callback: @escaping (MessageEvent<M>) -> Void) -> Subscriber? {
-            let ops = SubscribeOptions(topic: topic, queueSize: queueSize, callback: callback)
+            let ops = SubscribeOptions(topic: topic, queueSize: queueSize, queue: ros.gGlobalQueue, callback: callback)
             return subscribeWith(options: ops)
         }
 
@@ -628,12 +633,12 @@ extension Ros {
         public func subscribe<M: Message>(topic: String,
                                           queueSize: UInt32,
                                           callback: @escaping (M) -> Void) -> Subscriber? {
-            let ops = SubscribeOptions(topic: topic, queueSize: queueSize, callback: callback)
+            let ops = SubscribeOptions(topic: topic, queueSize: queueSize,  queue: ros.gGlobalQueue, callback: callback)
             return subscribeWith(options: ops)
         }
 
         public func spinThread() {
-            Ros.spin()
+            ros.spin()
         }
 
 
@@ -641,7 +646,7 @@ extension Ros {
 
         private func destruct() {
             if Ros.nodeReferenceCount.sub(1) == 1 && gNodeStartedByNodeHandle {
-                Ros.shutdown()
+                ros.shutdown()
             }
         }
 
@@ -673,7 +678,7 @@ extension Ros {
         }
 
         private func construct(ns: String) {
-            if !isInitialized {
+            if !ros.isInitialized {
                 fatalError("You must call Ros.initialize() before creating the first NodeHandle")
             }
 
@@ -682,9 +687,9 @@ extension Ros {
             namespace = resolveName(name: ns, remap: true) ?? ""
             ok = true
 
-            if Ros.nodeReferenceCount.add(1) == 0 && !isStarted {
+            if Ros.nodeReferenceCount.add(1) == 0 && !ros.isStarted {
                 gNodeStartedByNodeHandle = true
-                Ros.start()
+                ros.start()
             }
         }
 

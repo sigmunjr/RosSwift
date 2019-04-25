@@ -19,12 +19,11 @@ class SteadyTimerHelper {
     var timer: SteadyTimer? = nil
     var lastCall = SteadyTime(nanosec: 0)
 
-    init(_ period: Double, oneshot: Bool = false) {
+    init(node: Ros.NodeHandle, _ period: Double, oneshot: Bool = false) {
         self.oneshot = oneshot
-        let n = Ros.NodeHandle()
         let d = WallDuration(seconds: period)
         self.expectedPeriod = d
-        let tim = n.createSteadyTimer(period: d, trackedObject: self, callback: callback)
+        let tim = node.createSteadyTimer(period: d, trackedObject: self, callback: callback)
         self.timer = tim
     }
 
@@ -76,8 +75,11 @@ class SteadyTimerHelper {
 
 class TimerTest: XCTestCase {
 
+    var ros: Ros!
+
     override func setUp() {
-        _ = Ros.initialize(argv: &CommandLine.arguments, name: "TimerTest")
+        ros = Ros()
+        _ = ros.initialize(argv: &CommandLine.arguments, name: "TimerTest")
     }
 
     override func tearDown() {
@@ -85,12 +87,12 @@ class TimerTest: XCTestCase {
     }
 
     func testSingleSteadyTimeCallback() {
-        let n = Ros.NodeHandle()
+        let n = ros.createNode()
 
-        let helper = SteadyTimerHelper(0.01)
+        let helper = SteadyTimerHelper(node: n, 0.01)
         let d = WallDuration(milliseconds: 1)
         for i in 0..<1000 {
-            Ros.spinOnce()
+            ros.spinOnce()
             d.sleep()
         }
 
@@ -99,13 +101,13 @@ class TimerTest: XCTestCase {
     }
 
     func testMultipleSteadyTimeCallbacks() {
-        let n = Ros.NodeHandle()
+        let n = ros.createNode()
         let count = 10
         var helpers = [SteadyTimerHelper]()
         helpers.reserveCapacity(count)
         for i in 0..<count {
             let period = Double(i+1)*0.1
-            let helper = SteadyTimerHelper(period)
+            let helper = SteadyTimerHelper(node: n, period)
             helpers.append(helper)
         }
 
@@ -113,7 +115,7 @@ class TimerTest: XCTestCase {
         let d = WallDuration(milliseconds: 10)
         let spinCount = 1000
         for i in 0..<spinCount {
-            Ros.spinOnce()
+            ros.spinOnce()
             d.sleep()
         }
         let end = WallTime.now()

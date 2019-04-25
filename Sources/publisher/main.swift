@@ -65,17 +65,17 @@ func echo(req: TestStringString.Request) -> TestStringString.Response? {
     return TestStringString.Response(response)
 }
 
-let future = Ros.initialize(argv: &CommandLine.arguments, name: "talker")
+let ros = Ros(argv: &CommandLine.arguments, name: "talker")
 
 
 var keys = [String]()
 
-guard let n = Ros.NodeHandle(ns: "") else {
+guard let n = ros.createNode(ns: "") else {
     exit(1)
 }
 
 let req = AddTwoIntsRequest(a: 34, b: 22)
-if let res : AddTwoIntsResponse = try? Service.call(serviceName: "/add_two_ints", req: req).wait() {
+if let res : AddTwoIntsResponse = try? Service.call(node: n, serviceName: "/add_two_ints", req: req).wait() {
     print("\(req.a) + \(req.b) = \(res.sum)")
 } else {
     print("AddTwoIntsResponse failed")
@@ -117,7 +117,7 @@ guard let twist_pub = n.advertise(topic: "/twait", message: geometry_msgs.TwistS
 
 let request = TestStringString.Request("request from self")
 
-if let respons : TestStringString.Response = try? Service.call(serviceName: "echo", req: request).wait() {
+if let respons : TestStringString.Response = try? Service.call(node: n, serviceName: "echo", req: request).wait() {
     print(respons)
 } else {
     print("call returned nil")
@@ -130,10 +130,10 @@ if Ros.Param.getCached("int", &parameter) {
 }
 Ros.Param.set(key: "~parm", value: ["T":34.3,"I":45.0,"D":0.34])
 
-var rate = RosTime.Rate(frequency: 1.0)
+var rate = Rate(frequency: 1.0)
 
 var j : Int32 = 0
-while Ros.ok {
+while ros.ok {
     j += 1
     let time = RosTime.Time.now()
     let sm = geometry_msgs.Point(x: 1.0+Float64(j), y: Float64(j), z: sin(Float64(j)))
@@ -151,8 +151,8 @@ while Ros.ok {
     rate.sleep()
 }
 
-do {
-    try future.wait()
-} catch {
-    print(error.localizedDescription)
-}
+//do {
+//    try future.wait()
+//} catch {
+//    print(error.localizedDescription)
+//}

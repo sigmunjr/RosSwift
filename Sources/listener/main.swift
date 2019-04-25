@@ -33,15 +33,19 @@ func chatterCallbackEvent(event: MessageEvent<String>) {
     print("I got [\(msg) from \(event.connectionHeader["callerid"] ?? "<no caller id>")")
 }
 
-let future = Ros.initialize(argv: &CommandLine.arguments, name: "listener")
+guard let ros = Ros() else {
+    exit(1)
+}
+
+let future = ros.initialize(argv: &CommandLine.arguments, name: "listener")
 
 
-guard let n = Ros.NodeHandle(ns: "~") else {
+guard let n = ros.createNode(ns: "~") else {
     exit(1)
 }
 
 let request = TestStringString.Request("request from listener")
-if let respons : TestStringString.Response = try? Service.call(serviceName: "echo", req: request).wait() {
+if let respons : TestStringString.Response = try? Service.call(node: n, serviceName: "echo", req: request).wait() {
     print(respons)
 } else {
     print("call returned nil")
