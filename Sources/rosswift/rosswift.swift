@@ -274,7 +274,7 @@ public struct Ros {
         ROS_INFO("Started node [\(Ros.ThisNode.getName())], " +
             "pid [\(getpid())], bound on [\(Network.getHost())], " +
             "xmlrpc port [\(XMLRPCManager.instance.serverPort)], " +
-            "tcpros port [\(Ros.ConnectionManager.instance.getTCPPort())], using [\(RosTime.Time.useSimTime ? "sim":"real")] time")
+            "tcpros port [\(Ros.ConnectionManager.instance.getTCPPort())], using [\(Time.isSimTime() ? "sim":"real")] time")
 
     }
 

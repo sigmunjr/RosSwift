@@ -21,14 +21,14 @@ final class TransportPublisherLink: PublisherLink {
     var md5sum: String = ""
     
     private var connection: InboundConnection?
-    private var retryTimerHandle: Int32
+    private var retryTimerHandle: TimerHandle
     private var needsRetry: Bool
     private var retryPeriod = RosTime.WallDuration()
     private var nextRetry = RosTime.SteadyTime()
     private var isDropping: Bool
 
     init(parent: Subscription, xmlrpcUri: String, transportHints: TransportHints) {
-        retryTimerHandle = -1
+        retryTimerHandle = .none
         needsRetry = false
         isDropping = false
         self.parent = parent
@@ -39,7 +39,7 @@ final class TransportPublisherLink: PublisherLink {
     }
 
     deinit {
-        if retryTimerHandle != -1 {
+        if !retryTimerHandle.isNone {
             getInternalTimerManager().remove(timerHandle: retryTimerHandle)
         }
         connection?.drop(reason: .destructing)

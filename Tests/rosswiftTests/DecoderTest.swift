@@ -36,7 +36,7 @@ class DecoderTest: XCTestCase {
 
         XCTAssertTrue(try self.channel.writeInbound(buffer).isFull)
 
-        let data = try? (self.channel.readInbound(as: ByteBuffer.self)?.readableBytesView).map {
+        let data = try! (self.channel.readInbound(as: ByteBuffer.self)?.readableBytesView).map {
             String(decoding: $0, as: Unicode.UTF8.self)
         }
         XCTAssertNotNil(data)

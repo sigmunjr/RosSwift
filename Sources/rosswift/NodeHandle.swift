@@ -250,10 +250,19 @@ extension Ros {
         func createSteadyTimer(period: RosTime.WallDuration,
                                   oneshot: Bool = false,
                                   autostart: Bool = true,
-                                  callback: @escaping (RosTime.SteadyTimerEvent) -> Void) -> RosTime.SteadyTimer  {
+                                  trackedObject: AnyObject? = nil,
+                                  callback: @escaping (SteadyTimerEvent) -> Void) -> SteadyTimer  {
 
-            fatalError("not implemented")
-            return RosTime.SteadyTimer()
+            let timer = SteadyTimer(period: period,
+                                    callback: callback,
+                                    callbackQueue: getCallbackQueue(),
+                                    trackedObject: trackedObject,
+                                    oneshot: oneshot)
+
+            if autostart {
+                timer.start()
+            }
+            return timer
         }
 
         /// Create a timer which will call a callback at the specified rate,
@@ -267,13 +276,23 @@ extension Ros {
         ///     - autostart: If true (default), return timer that is already started
 
 
-        func createTimer(period: RosTime.Duration,
+        func createTimer(period: Duration,
                                oneshot: Bool = false,
                                autostart: Bool = true,
-                               callback: @escaping (RosTime.TimerEvent) -> Void) -> RosTime.Timer  {
+                               trackedObject: AnyObject? = nil,
+                               callback: @escaping TimerCallback) -> Timer  {
 
-            fatalError("not implemented")
-            return RosTime.Timer()
+            let timer = Timer(period: period,
+                              callback: callback,
+                              callbackQueue: getCallbackQueue(),
+                              trackedObject: trackedObject,
+                              oneshot: oneshot)
+
+            if autostart {
+                timer.start()
+            }
+            return timer
+
         }
 
         /// Create a timer which will call a callback at the specified rate, using wall time to determine when to
@@ -288,13 +307,22 @@ extension Ros {
         ///     - autostart: If true (default), return timer that is already started
 
 
-        func createWallTimer(period: RosTime.Duration,
+        func createWallTimer(period: WallDuration,
                          oneshot: Bool = false,
                          autostart: Bool = true,
-                         callback: @escaping (RosTime.WallTimerEvent) -> Void) -> RosTime.WallTimer  {
+                         trackedObject: AnyObject? = nil,
+                         callback: @escaping (WallTimerEvent) -> Void) -> WallTimer  {
 
-            fatalError("not implemented")
-            return RosTime.WallTimer()
+            let timer = WallTimer(period: period,
+                                    callback: callback,
+                                    callbackQueue: getCallbackQueue(),
+                                    trackedObject: trackedObject,
+                                    oneshot: oneshot)
+
+            if autostart {
+                timer.start()
+            }
+            return timer
         }
 
 

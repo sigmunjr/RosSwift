@@ -7,8 +7,6 @@
 
 import Foundation
 
-extension RosTime {
-
 public struct Rate {
     var start: Time
     let expectedCycleTime: Duration
@@ -102,4 +100,3 @@ struct WallRate {
 
 }
 
-}
