@@ -28,6 +28,14 @@ func amIBeingDebugged() -> Bool {
     #endif
 }
 
+func check_ipv6_environment() {
+    //        if let envIPv6 = getenv("ROS_IPV6") {
+    //            let env = String(utf8String: envIPv6)
+    //            let useIPv6 = env == "on"
+    //        }
+}
+
+
 public final class Ros: Hashable {
 
     public static func == (lhs: Ros, rhs: Ros) -> Bool {
@@ -63,27 +71,108 @@ public final class Ros: Hashable {
     var isStarted = false
     var isInitialized = false
     let logg = HeliumLogger(.debug)
+//    let thisNode: ThisNode
+    public let param: Param
+    let serviceManager: ServiceManager
+    let topicManager: TopicManager
+    let connectionManager: ConnectionManager
+    let name: String
+    internal let namespace: String
+    internal var globalRemappings = StringStringMap()
+    internal var globalUnresolvedRemappings = StringStringMap()
+
 
     public var ok: Bool { return isRunning }
 
-    public init(name: String, remappings: StringStringMap = [:], options: InitOption = []) {
+    public init(name inName: String, remappings: StringStringMap = [:], options: InitOption = []) {
         initOptions = options
         isRunning = true
 
         check_ipv6_environment()
         Network.initialize(remappings: remappings)
         Master.shared.initialize(remappings: remappings)
-        ThisNode.initialize(name: name, remappings: remappings, options: options)
-        fileLog = FileLog(remappings: remappings)
-        Param.initialize(remappings: remappings)
+
+        var ns = ""
+
+        if let namespaceEnvironment = ProcessInfo.processInfo.environment["ROS_NAMESPACE"] {
+            ns = namespaceEnvironment
+        }
+
+        guard !inName.isEmpty else {
+            fatalError("The node name must not be empty")
+        }
+
+        var node_name = inName
+
+        var disableAnon = false
+        if let it = remappings["__name"] {
+            node_name = it
+            disableAnon = true
+        }
+
+        if let it = remappings["__ns"] {
+            ns = it
+        }
+
+        ns = Names.clean(ns)
+        if ns.isEmpty || ns.first != "/" {
+            ns = "/" + ns
+        }
+
+        var error = ""
+        if !Names.validate(name: ns, error: &error) {
+            fatalError("Namespace [\(ns)] is invalid: \(error)")
+        }
+
+
+        // names must be initialized here, because it requires the namespace
+        // to already be known so that it can properly resolve names.
+        // It must be done before we resolve g_name, because otherwise the name will not get remapped.
+        for it in remappings {
+            if !it.key.isEmpty && it.key.first! != "_" && it.key != node_name {
+                if let resolvedKey = Ros.Names.resolve(ns: ns, name: it.key),
+                    let resolvedName = Ros.Names.resolve(ns: ns, name: it.value) {
+                    globalRemappings[resolvedKey] = resolvedName
+                    globalUnresolvedRemappings[it.key] = it.value
+                } else {
+                    ROS_ERROR("remapping \(it.key) to \(it.value) failed")
+                }
+            }
+        }
+
+        if node_name.contains("/") {
+            fatalError("\(node_name), node names cannot contain /")
+        }
+
+        if node_name.contains("~") {
+            fatalError("\(node_name), node names cannot contain ~")
+        }
+
+        node_name = Names.resolve(ns: ns, name: node_name)!
+
+        if options.contains(.anonymousName) && !disableAnon {
+            node_name.append("_\(RosTime.WallTime.now().toNSec())")
+        }
+
+        Ros.Console.setFixedFilterToken(key: "node", val: node_name)
+
+        self.namespace = ns
+        self.name = node_name
 
         isInitialized = true
+        serviceManager = ServiceManager()
+        topicManager = TopicManager()
+        connectionManager = ConnectionManager()
+        param = Param()
+        param.initialize(remappings: remappings)
+        fileLog = FileLog(thisNodeName: getName(), remappings: remappings)
 
         if !Ros.atexitRegistered {
             Ros.atexitRegistered = true
             atexit(atexitCallback)
         }
 
+        param.ros = self
         Ros.globalRos.insert(self)
     }
 
@@ -259,12 +348,6 @@ public final class Ros: Hashable {
 //        return promise.futureResult
 //    }
 
-    func check_ipv6_environment() {
-//        if let envIPv6 = getenv("ROS_IPV6") {
-//            let env = String(utf8String: envIPv6)
-//            let useIPv6 = env == "on"
-//        }
-    }
 
     func removeROSArgs(argv: [String]) -> [String] {
         return argv.filter { $0.contains(":=") }
@@ -285,7 +368,7 @@ public final class Ros: Hashable {
         }
     }
 
-    private func start() {
+    internal func start() {
         ROS_INFO("starting Ros")
         if isStarted {
             return
@@ -295,7 +378,7 @@ public final class Ros: Hashable {
         isStarted = true
         isRunning = true
 
-        _ = Param.param(name: "/tcp_keepalive", value: &TransportTCP.useKeepalive, defaultValue: TransportTCP.useKeepalive)
+        _ = param.param(name: "/tcp_keepalive", value: &TransportTCP.useKeepalive, defaultValue: TransportTCP.useKeepalive)
 
         guard XMLRPCManager.instance.bind(function: "shutdown", cb: shutdownCallback) else {
             fatalError("Could not bind function")
@@ -303,9 +386,9 @@ public final class Ros: Hashable {
 
         initInternalTimerManager()
 
-        TopicManager.instance.start()
-        ServiceManager.instance.start()
-        Ros.ConnectionManager.instance.start()
+        topicManager.start(ros: self)
+        serviceManager.start(ros: self)
+        connectionManager.start(ros: self)
         XMLRPCManager.instance.start()
 
         if !initOptions.contains(.noSigintHandler) {
@@ -321,8 +404,8 @@ public final class Ros: Hashable {
             rosoutAppender = appender
         }
 
-        let logServiceName = Names.resolve(name: "~set_logger_level")!
-        _ = ServiceManager.instance.advertiseService(.init(service: logServiceName,
+        let logServiceName = resolve(name: "~set_logger_level")!
+        _ = serviceManager.advertiseService(.init(service: logServiceName,
                                                            callback: setLoggerLevel))
 
         if isShuttingDown.load() {
@@ -332,19 +415,19 @@ public final class Ros: Hashable {
         if let enableDebug = ProcessInfo.processInfo.environment["ROSCPP_ENABLE_DEBUG"],
             enableDebug.lowercased() == "true" || enableDebug == "1" {
 
-            let closeServiceName = Names.resolve(name: "~debug/close_all_connections")!
+            let closeServiceName = resolve(name: "~debug/close_all_connections")!
             let options = AdvertiseServiceOptions(service: closeServiceName, callback: closeAllConnections)
-            _ = ServiceManager.instance.advertiseService(options)
+            _ = serviceManager.advertiseService(options)
         }
 
-        let useSimTime = Param.param(name: "/use_sim_time", defaultValue: false)
+        let useSimTime = param.param(name: "/use_sim_time", defaultValue: false)
         if useSimTime {
             RosTime.Time.setNow(RosTime.Time())
         }
 
         if useSimTime {
             let ops = SubscribeOptions(topic: "/clock", queueSize: 1, queue: getGlobalCallbackQueue(), callback: clockCallback)
-            if !TopicManager.instance.subscribeWith(options: ops) {
+            if !topicManager.subscribeWith(options: ops) {
                 ROS_ERROR("could not subscribe to /clock")
             }
         }
@@ -353,10 +436,10 @@ public final class Ros: Hashable {
             return
         }
 
-        ROS_INFO("Started node [\(Ros.ThisNode.getName())], " +
+        ROS_INFO("Started node [\(name)], " +
             "pid [\(getpid())], bound on [\(Network.getHost())], " +
             "xmlrpc port [\(XMLRPCManager.instance.serverPort)], " +
-            "tcpros port [\(Ros.ConnectionManager.instance.getTCPPort())], using [\(Time.isSimTime() ? "sim":"real")] time")
+            "tcpros port [\(connectionManager.getTCPPort())], using [\(Time.isSimTime() ? "sim":"real")] time")
 
     }
 
@@ -364,7 +447,7 @@ public final class Ros: Hashable {
 
     func closeAllConnections(x: EmptyRequest) -> EmptyResponse? {
         ROS_INFO("close_all_connections service called, closing connections")
-        ConnectionManager.instance.clear(reason: .transportDisconnect)
+        connectionManager.clear(reason: .transportDisconnect)
         return EmptyResponse()
     }
 
@@ -379,9 +462,9 @@ public final class Ros: Hashable {
         if isShuttingDown.compareAndExchange(expected: false, desired: true) {
             ROS_DEBUG("ros shutdown")
             if isStarted {
-                TopicManager.instance.shutdown()
-                ServiceManager.instance.shutdown()
-                ConnectionManager.instance.shutdown()
+                topicManager.shutdown()
+                serviceManager.shutdown()
+                connectionManager.shutdown()
                 XMLRPCManager.instance.shutdown()
             }
 

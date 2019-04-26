@@ -22,21 +22,10 @@ class serviceTests: XCTestCase {
         ("testCallSrvMultipleTimes",testCallSrvMultipleTimes)
     ]
 
-    var ros: Ros!
-
     override func setUp() {
-        print("##########  SETUP ##############")
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-        ros = Ros()
-        let _ = ros.initialize(argv: &CommandLine.arguments, name: "serviceTests")
-
     }
 
     override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-        ros.shutdown()
-        print("##########  SHUTDOWN ##############")
-
     }
 
     func srvCallback(req: TestStringString.Request) -> TestStringString.Response? {
@@ -44,7 +33,7 @@ class serviceTests: XCTestCase {
     }
 
     func testCallService() {
-
+        let ros = Ros(name: "testCallService")
         let node = ros.createNode()
         guard let serv = node.advertise(service: "/service_adv", srvFunc: srvCallback) else {
             XCTFail()
@@ -66,6 +55,7 @@ class serviceTests: XCTestCase {
     }
 
     func testCallEcho() {
+        let ros = Ros(name: "testCallEcho")
         let node = ros.createNode()
 
         var req = TestStringString.Request()
@@ -86,6 +76,7 @@ class serviceTests: XCTestCase {
     }
 
     func testCallInternalService() {
+        let ros = Ros(name: "testCallInternalService")
         let n = ros.createNode()
         var t = TestStringString()
 
@@ -98,6 +89,7 @@ class serviceTests: XCTestCase {
     }
 
     func testServiceAdvCopy()  {
+        let ros = Ros(name: "testServiceAdvCopy")
         let node = ros.createNode()
         var t = TestStringString()
 
@@ -136,6 +128,7 @@ class serviceTests: XCTestCase {
 
 
     func testServiceAdvMultiple()  {
+        let ros = Ros(name: "testServiceAdvMultiple")
         let n = ros.createNode()
 
         let srv = n.advertise(service: "/test_srv_19", srvFunc: serviceCallback)
@@ -148,7 +141,7 @@ class serviceTests: XCTestCase {
 
 
     func testCallSrvMultipleTimes() {
-
+        let ros = Ros(name: "testCallSrvMultipleTimes")
         let node = ros.createNode()
         let serv = node.advertise(service: "/service_adv2", srvFunc: srvCallback)
         XCTAssertNotNil(serv)

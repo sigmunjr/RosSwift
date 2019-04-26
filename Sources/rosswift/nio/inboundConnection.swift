@@ -20,8 +20,8 @@ final class InboundConnection: ConnectionProtocol {
 
     var channel: Channel?
     var dropped = Atomic<Bool>(value: false)
-    weak var parent: Subscription?
-    weak var link: TransportPublisherLink?
+    unowned var parent: Subscription!
+    unowned var link: TransportPublisherLink!
     let host: String
     let port: Int
     var handler: InboundHandler?
@@ -114,7 +114,7 @@ final class InboundConnection: ConnectionProtocol {
             fatalError("onHeaderReceived has no link")
         }
 
-        if !link.setHeader(header: header) {
+        if !link.setHeader(ros: parent.ros, header: header) {
             drop(reason: .headerError)
         }
     }

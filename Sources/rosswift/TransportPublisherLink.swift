@@ -45,13 +45,13 @@ final class TransportPublisherLink: PublisherLink {
         connection?.drop(reason: .destructing)
     }
 
-    func initialize(connection: InboundConnection) {
+    func initialize(ros: Ros, connection: InboundConnection) {
         self.connection = connection
         connection.initialize(owner: self)
 
         let header: StringStringMap = ["topic": parent.name,
                                      "md5sum": parent.md5sum,
-                                     "callerid": Ros.ThisNode.getName(),
+                                     "callerid": ros.getName(),
                                      "type": parent.datatype,
                                      "tcp_nodelay": transportHints.getTCPNoDelay() ? "1" : "0"]
 

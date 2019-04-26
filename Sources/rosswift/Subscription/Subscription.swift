@@ -52,13 +52,15 @@ final class Subscription {
     let md5sumQueue = DispatchQueue(label: "md5sumQueue")
     let callbacksQueue = DispatchQueue(label: "callbacksQueue")
     var latchedMessages = [ObjectIdentifier: LatchInfo]()
+    let ros: Ros
 
-    init(name: String, md5sum: String, datatype: String, transportHints: TransportHints) {
+    init(ros: Ros, name: String, md5sum: String, datatype: String, transportHints: TransportHints) {
         self.name = name
         self.datatype = datatype
         self.md5sum = md5sum
         self.transportHints = transportHints
         self.statistics = nil
+        self.ros = ros
     }
 
     func shutdown() {
@@ -130,7 +132,7 @@ final class Subscription {
         return true
     }
 
-    func add(localConnection: Publication) {
+    func add(ros: Ros, localConnection: Publication) {
         if dropped.load() {
             return
         }
@@ -139,8 +141,8 @@ final class Subscription {
 
         let pubLink = IntraProcessPublisherLink(parent: self, xmlrpcUri: XMLRPCManager.instance.serverURI, transportHints: transportHints)
         let subLink = IntraProcessSubscriberLink(parent: localConnection)
-        _ = pubLink.setPublisher(publisher: subLink)
-        subLink.setSubscriber(subscriber: pubLink)
+        _ = pubLink.setPublisher(ros: ros, publisher: subLink)
+        subLink.setSubscriber(ros: ros, subscriber: pubLink)
 
         publisherLinks.append(pubLink)
         localConnection.addSubscriberLink(subLink)
@@ -271,7 +273,7 @@ final class Subscription {
             }
         }
 
-        let params = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), name, protosArray])
+        let params = XmlRpcValue(anyArray: [ros.getName(), name, protosArray])
 
         guard let url = URL(string: uri), let peerHost = url.host, let peerPort = url.port else {
             ROS_ERROR("Bad xml-rpc URI: [\(uri)]")
@@ -296,8 +298,8 @@ final class Subscription {
             DispatchQueue.global().async {
                 let connection = InboundConnection(parent: self, host: pubHost, port: pubPort)
                 let pubLink = TransportPublisherLink(parent: self, xmlrpcUri: uri, transportHints: self.transportHints)
-                _ = pubLink.initialize(connection: connection)
-                Ros.ConnectionManager.instance.addConnection(connection: connection)
+                _ = pubLink.initialize(ros: self.ros, connection: connection)
+                self.ros.connectionManager.addConnection(connection: connection)
                 self.publisherLinks.append(pubLink)
                 ROS_DEBUG("Connected to publisher of topic [\(self.name)] at [\(pubHost):\(pubPort)]")
             }

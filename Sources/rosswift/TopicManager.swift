@@ -24,7 +24,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
 extension Ros {
     final class TopicManager {
 
-        static let instance = TopicManager()
+//        static let instance = TopicManager()
 
         let advertisedTopicsMutex = NSRecursiveLock()
         let subsQueue = DispatchQueue(label: "subs_mutex_")
@@ -37,20 +37,24 @@ extension Ros {
         var shuttingDown = false
 
         var connectionManager: ConnectionManager {
-            return Ros.ConnectionManager.instance
+            return ros.connectionManager
         }
 
         var xmlrpcManager: XMLRPCManager {
             return XMLRPCManager.instance
         }
 
-        private init() {}
+        unowned var ros: Ros!
+
+        internal init() {
+        }
 
         deinit {
             shutdown()
         }
 
-        func start() {
+        func start(ros: Ros) {
+            self.ros = ros
             shuttingDownQueue.sync {
                 shuttingDown = false
 
@@ -253,7 +257,7 @@ extension Ros {
 
         func unregisterPublisher(topic: String) -> Bool {
             ROS_DEBUG("unregister publisher \(topic)")
-            let args = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), topic, xmlrpcManager.serverURI])
+            let args = XmlRpcValue(anyArray: [ros.getName(), topic, xmlrpcManager.serverURI])
             do {
                 let response = try Master.shared.execute(method: "unregisterPublisher", request: args).wait()
                 ROS_DEBUG("response = \(response)")
@@ -332,7 +336,8 @@ extension Ros {
                     let md5sum = M.md5sum
                     let datatype = M.datatype
 
-                    let sub = Subscription(name: options.topic,
+                    let sub = Subscription(ros: ros,
+                                           name: options.topic,
                                            md5sum: md5sum,
                                            datatype: datatype,
                                            transportHints: options.transportHints)
@@ -343,7 +348,7 @@ extension Ros {
                                 trackedObject: options.trackedObject,
                                 allowConcurrentCallbacks: options.allowConcurrentCallbacks)
 
-                    if !registerSubscriber(s: sub, datatype: M.datatype) {
+                    if !registerSubscriber(callerId: ros.getName(), s: sub, datatype: M.datatype) {
                         ROS_DEBUG("couldn't register subscriber on topic [\(options.topic)")
                         sub.shutdown()
                         ok = false
@@ -386,8 +391,8 @@ extension Ros {
             return true
         }
 
-        func registerSubscriber(s: Subscription, datatype: String) -> Bool {
-            let args = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), s.name, datatype, xmlrpcManager.serverURI])
+        func registerSubscriber(callerId: String, s: Subscription, datatype: String) -> Bool {
+            let args = XmlRpcValue(anyArray: [ros.getName(), s.name, datatype, xmlrpcManager.serverURI])
 
             var payload = XmlRpcValue()
             do {
@@ -442,7 +447,7 @@ extension Ros {
             if ok {
                 _ = s.pubUpdate(newPubs: pubUris)
                 if selfSubscribed, let local = pubLocal {
-                    s.add(localConnection: local)
+                    s.add(ros: ros, localConnection: local)
                 }
             }
 
@@ -450,7 +455,7 @@ extension Ros {
         }
 
         func unregisterSubscriber(topic: String) {
-            let args = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), topic, xmlrpcManager.serverURI])
+            let args = XmlRpcValue(anyArray: [ros.getName(), topic, xmlrpcManager.serverURI])
             let response = Master.shared.execute(method: "unregisterSubscriber", request: args)
             response.whenFailure { error in
                 ROS_ERROR("ouldn't unregister subscriber for topic [\(topic)]: \(error)")
@@ -516,12 +521,12 @@ extension Ros {
                     s.name == ops.topic && md5sumsMatch(lhs: s.md5sum, rhs: M.md5sum) && !s.dropped.load()
                 }) {
                     DispatchQueue.main.async {
-                        it.add(localConnection: pub)
+                        it.add(ros: self.ros, localConnection: pub)
                     }
                 }
             }
 
-            let args = XmlRpcValue(array: [.init(str: Ros.ThisNode.getName()),
+            let args = XmlRpcValue(array: [.init(str: ros.getName()),
                                            .init(str: ops.topic),
                                            .init(str: M.datatype),
                                            .init(str: xmlrpcManager.serverURI)])

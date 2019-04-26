@@ -9,6 +9,112 @@ import Foundation
 
 extension Ros {
 
+    public func getRemappings() -> StringStringMap {
+        return globalRemappings
+    }
+
+    public func getUnresolvedRemappings() -> StringStringMap {
+        return globalUnresolvedRemappings
+    }
+
+    internal func initRemap(remappings: StringStringMap) {
+        for it in remappings {
+            if !it.key.isEmpty && it.key.first! != "_" && it.key != getName() {
+                if let resolvedKey = resolve(name: it.key, remap: false),
+                    let resolvedName = resolve(name: it.value, remap: false) {
+                    globalRemappings[resolvedKey] = resolvedName
+                    globalUnresolvedRemappings[it.key] = it.value
+                } else {
+                    ROS_ERROR("remapping \(it.key) to \(it.value) failed")
+                }
+            }
+        }
+    }
+
+    /// Resolve a graph resource name into a fully qualified graph resource name.
+    ///
+    /// See http://wiki.ros.org/Names for more details
+    ///
+    /// - Parameters:
+    ///     - name:    Name to resolve
+    ///     - remap:   Whether or not to apply remappings to the name
+    /// - Returns: nil if the name passed is not a valid graph resource name
+
+
+    public func resolve(name: String, remap: Bool = true) -> String? {
+        return resolve(ns: getNamespace(), name: name, remap: remap)
+    }
+
+    /// Resolve a graph resource name into a fully qualified graph resource name.
+    ///
+    /// See http://wiki.ros.org/Names for more details
+    ///
+    /// - Parameters:
+    ///     - ns:   Namespace to use in resultion
+    ///     - name:    Name to resolve
+    ///     - remap:   Whether or not to apply remappings to the name
+    /// - Throws:
+    ///     - invalidName:    if the name passed is not a valid graph resource name
+
+
+
+    func resolve(ns: String, name: String, remap: Bool = true) -> String? {
+        var error = ""
+        guard Names.validate(name: name, error: &error) else {
+            ROS_ERROR(error)
+            return nil
+        }
+
+        if name.isEmpty {
+            if ns.isEmpty {
+                return "/"
+            }
+
+            if ns.first! == "/" {
+                return ns
+            }
+
+            return Names.append("/", ns)
+        }
+
+        var copy = name
+
+        if copy.first! == "~" {
+            copy = Names.append(getName(), String(copy.dropFirst()))
+        }
+
+        if copy.first! != "/" {
+            copy = Names.append("/", Names.append(ns, copy))
+        }
+
+        copy = Names.clean(copy)
+
+        if remap {
+            return self.remap(name: copy)
+        }
+
+        return copy
+    }
+
+
+    /// Apply remappings to a name.
+    ///
+    /// - Returns: nil if the name is not a valid graph resource name
+
+
+    public func remap(name: String) -> String? {
+        guard let resolved = resolve(name: name, remap: false) else {
+            return nil
+        }
+
+        if let it = globalRemappings[resolved] {
+            return it
+        }
+        return name
+    }
+
+
+
     /// Contains functions which allow you to manipulate ROS names.
 
     struct Names {
@@ -27,31 +133,6 @@ extension Ros {
                 return String(clean.dropLast())
             }
             return clean
-        }
-
-        public static func getRemappings() -> StringStringMap {
-            return Names.globalRemappings
-        }
-
-        public static func getUnresolvedRemappings() -> StringStringMap {
-            return Names.globalUnresolvedRemappings
-        }
-
-        private static var globalRemappings = StringStringMap()
-        private static var globalUnresolvedRemappings = StringStringMap()
-
-        public static func initialize(remappings: StringStringMap) {
-            for it in remappings {
-                if !it.key.isEmpty && it.key.first! != "_" && it.key != ThisNode.getName() {
-                    if let resolvedKey = resolve(name: it.key, remap: false),
-                        let resolvedName = resolve(name: it.value, remap: false) {
-                        Names.globalRemappings[resolvedKey] = resolvedName
-                        Names.globalUnresolvedRemappings[it.key] = it.value
-                    } else {
-                        ROS_ERROR("remapping \(it.key) to \(it.value) failed")
-                    }
-                }
-            }
         }
 
         public static func isValidCharInName(_ c: Character) -> Bool {
@@ -102,87 +183,6 @@ extension Ros {
             return ""
         }
 
-        /// Apply remappings to a name.
-        ///
-        /// - Returns: nil if the name is not a valid graph resource name
-
-
-        public static func remap(name: String) -> String? {
-            guard let resolved = resolve(name: name, remap: false) else {
-                return nil
-            }
-
-            if let it = Names.globalRemappings[resolved] {
-                return it
-            }
-            return name
-        }
-
-        /// Resolve a graph resource name into a fully qualified graph resource name.
-        ///
-        /// See http://wiki.ros.org/Names for more details
-        ///
-        /// - Parameters:
-        ///     - name:    Name to resolve
-        ///     - remap:   Whether or not to apply remappings to the name
-        /// - Returns: nil if the name passed is not a valid graph resource name
-
-
-        public static func resolve(name: String, remap: Bool = true) -> String? {
-            return resolve(ns: ThisNode.getNamespace(), name: name, remap: remap)
-        }
-
-        /// Resolve a graph resource name into a fully qualified graph resource name.
-        ///
-        /// See http://wiki.ros.org/Names for more details
-        ///
-        /// - Parameters:
-        ///     - ns:   Namespace to use in resultion
-        ///     - name:    Name to resolve
-        ///     - remap:   Whether or not to apply remappings to the name
-        /// - Throws:
-        ///     - invalidName:    if the name passed is not a valid graph resource name
-
-
-
-        static func resolve(ns: String, name: String, remap: Bool = true) -> String? {
-            var error = ""
-            guard validate(name: name, error: &error) else {
-                ROS_ERROR(error)
-                return nil
-            }
-
-            if name.isEmpty {
-                if ns.isEmpty {
-                    return "/"
-                }
-
-                if ns.first! == "/" {
-                    return ns
-                }
-
-                return append("/", ns)
-            }
-
-            var copy = name
-
-            if copy.first! == "~" {
-                copy = append(ThisNode.getName(), String(copy.dropFirst()))
-            }
-
-            if copy.first! != "/" {
-                copy = append("/", append(ns, copy))
-            }
-
-            copy = clean(copy)
-
-            if remap {
-                return Names.remap(name: copy)
-            }
-
-            return copy
-        }
-
 
         /// Validate a name against the name spec.
 
@@ -212,6 +212,45 @@ extension Ros {
 
             return true
         }
+
+        /// Resolve a graph resource name into a fully qualified graph resource name.
+        ///
+        /// See http://wiki.ros.org/Names for more details
+        ///
+        /// - Parameters:
+        ///     - ns:   Namespace to use in resultion
+        ///     - name:    Name to resolve
+
+
+
+        static func resolve(ns: String, name: String) -> String? {
+            var error = ""
+            guard Names.validate(name: name, error: &error) else {
+                ROS_ERROR(error)
+                return nil
+            }
+
+            if name.isEmpty {
+                ROS_ERROR(error)
+                return nil
+            }
+
+            var copy = name
+
+            if copy.first! == "~" {
+                ROS_ERROR(error)
+                return nil
+            }
+
+            if copy.first! != "/" {
+                copy = Names.append("/", Names.append(ns, copy))
+            }
+
+            copy = Names.clean(copy)
+
+            return copy
+        }
+
 
     }
 

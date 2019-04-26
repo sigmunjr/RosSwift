@@ -31,18 +31,18 @@ final class IntraProcessPublisherLink: PublisherLink {
         self.latched = false
     }
 
-    func setPublisher(publisher: IntraProcessSubscriberLink) -> Bool {
+    func setPublisher(ros: Ros, publisher: IntraProcessSubscriberLink) -> Bool {
         self.publisher = publisher
         let header = Header()
 
-        header.headers = ["callerid": Ros.ThisNode.getName(),
+        header.headers = ["callerid": ros.getName(),
                       "topic": parent.name,
                       "type": publisher.dataType,
                       "md5sum": publisher.md5Sum,
                       "message_definition": publisher.messageDefinition,
                       "latching": publisher.isLatching() ? "1" : "0"
                     ]
-        return setHeader(header: header)
+        return setHeader(ros: ros, header: header)
     }
 
     func getTransportType() -> String {

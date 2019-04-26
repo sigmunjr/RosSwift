@@ -22,9 +22,11 @@ extension Ros {
     var running = true
 
     let isIntraprocess = false
+        let topicManager: TopicManager
 
-    init(connection: Nio.Connection) {
+        init(connection: Nio.Connection, topicManager: TopicManager) {
         self.connection = connection
+            self.topicManager = topicManager
     }
 
     func drop() {
@@ -41,7 +43,7 @@ extension Ros {
 
     var transportInfo: String { return connection?.getTransportInfo() ?? "" }
 
-    func handleHeader(header: Header) -> Bool {
+        func handleHeader(ros: Ros, header: Header) -> Bool {
         guard let connection = connection else {
             ROS_ERROR("no connection")
             return false
@@ -55,7 +57,7 @@ extension Ros {
 
         // This will get validated by validateHeader below
         let clientCallerId = header.getValue(key: "callerid") ?? ""
-        guard let pub = TopicManager.instance.lookupPublication(topic: topic) else {
+        guard let pub = topicManager.lookupPublication(topic: topic) else {
             let msg = "received a connection for a nonexistent topic [\(topic)] " +
                       "from [\(connection.remoteAddress)] [\(clientCallerId)]."
             ROS_ERROR(msg)
@@ -71,7 +73,7 @@ extension Ros {
         }
 
         destinationCallerId = clientCallerId
-        connectionId = UInt(Ros.ConnectionManager.instance.getNewConnectionID())
+        connectionId = UInt(ros.connectionManager.getNewConnectionID())
         self.topic = pub.name
         parent = pub
 
@@ -80,7 +82,7 @@ extension Ros {
         m["type"] = pub.datatype
         m["md5sum"] = pub.md5sum
         m["message_definition"] = pub.messageDefinition
-        m["callerid"] = Ros.ThisNode.getName()
+        m["callerid"] = ros.getName()
         m["latching"] = pub.isLatching() ? "1" : "0"
         m["topic"] = topic
 

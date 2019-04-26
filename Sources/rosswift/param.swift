@@ -11,11 +11,15 @@ typealias ParameterStorage = [String: XmlRpcValue]
 
 extension Ros {
 
-public struct Param {
+public final class Param {
 
-    static var parameterQueue = DispatchQueue(label: "parameterQueue")
-    static var gSubscribedParameters = Set<String>()
-    static var gParameters = ParameterStorage()
+    let parameterQueue = DispatchQueue(label: "parameterQueue")
+    var gSubscribedParameters = Set<String>()
+    var gParameters = ParameterStorage()
+    unowned var ros: Ros!
+
+    init() {
+    }
 
     /// Delete a parameter from the parameter server.
     ///
@@ -27,8 +31,8 @@ public struct Param {
     /// - Throws:
     ///     - invalidName    if the key is not a valid graph resource name
 
-    public static func del(key: String) -> Bool {
-        guard let mappedKey = Names.resolve(name: key) else {
+    public func del(key: String) -> Bool {
+        guard let mappedKey = ros.resolve(name: key) else {
             return false
         }
 
@@ -37,7 +41,7 @@ public struct Param {
             gParameters.removeValue(forKey: mappedKey)
         }
 
-        let params = XmlRpcValue(anyArray: [ThisNode.getName(), mappedKey])
+        let params = XmlRpcValue(anyArray: [ros.getName(), mappedKey])
         do {
             let payload = try Master.shared.execute(method: "deleteParam", request: params).wait()
             return payload.valid()
@@ -59,7 +63,7 @@ public struct Param {
     ///     - invalidName    if the key is not a valid graph resource name
 
 
-    public static func get<T>(_ key: String, _ value: inout T) -> Bool {
+    public func get<T>(_ key: String, _ value: inout T) -> Bool {
         if let v = getImpl(key: key, useCache: false) {
             if T.self == XmlRpcValue.self {
                 value = v as! T
@@ -84,7 +88,7 @@ public struct Param {
     ///     - invalidName    if the key is not a valid graph resource name
 
 
-    public static func get(_ key: String, _ value: inout Int) -> Bool {
+    public func get(_ key: String, _ value: inout Int) -> Bool {
         if let v = getImpl(key: key, useCache: false) {
             switch v.value {
             case .int(let i):
@@ -125,7 +129,7 @@ public struct Param {
     ///     - invalidName    if the key is not a valid graph resource name
 
 
-    public static func getCached<T>(_ key: String, _ value: inout T) -> Bool {
+    public func getCached<T>(_ key: String, _ value: inout T) -> Bool {
         if let v = getImpl(key: key, useCache: true) {
             if T.self == XmlRpcValue.self {
                 value = v as! T
@@ -143,8 +147,8 @@ public struct Param {
     /// - Parameter keys: The vector of all the keys
     /// - Returns: false if the process fails
 
-    public static func getParamNames(keys: inout [String]) -> Bool {
-        let params = XmlRpcValue(str: ThisNode.getName())
+    public func getParamNames(keys: inout [String]) -> Bool {
+        let params = XmlRpcValue(str: ros.getName())
         do {
             let parameters = try Master.shared.execute(method: "getParamNames", request: params).wait()
 
@@ -176,12 +180,12 @@ public struct Param {
     /// - Throws:
     ///     - invalidName    if the key is not a valid graph resource name
 
-    public static func has(key: String) -> Bool {
-        guard let resolved = Names.resolve(name: key) else {
+    public func has(key: String) -> Bool {
+        guard let resolved = ros.resolve(name: key) else {
             return false
         }
 
-        let params = XmlRpcValue(anyArray: [ThisNode.getName(), resolved])
+        let params = XmlRpcValue(anyArray: [ros.getName(), resolved])
 
         // We don't loop here, because validateXmlrpcResponse() returns false
         // both when we can't contact the master and when the master says, "I
@@ -202,7 +206,7 @@ public struct Param {
     }
 
 
-    public static func initialize(remappings: StringStringMap) {
+    public func initialize(remappings: StringStringMap) {
         for map in remappings {
 
             let name = map.key
@@ -216,7 +220,7 @@ public struct Param {
             }
 
             if name.starts(with: "_") && !name.dropFirst().starts(with: "_") {
-                if let localName = Names.resolve(name: "~".appending(name.dropFirst())) {
+                if let localName = ros.resolve(name: "~".appending(name.dropFirst())) {
                     if let i = Int32(param) {
                         set(key: localName, value: i)
                     } else if let d = Double(param) {
@@ -240,7 +244,7 @@ public struct Param {
         }
     }
 
-    public static func invalidateParentParams(_ key: String) {
+    public func invalidateParentParams(_ key: String) {
         guard var nsKey = Names.parentNamespace(name: key) else {
             return
         }
@@ -268,7 +272,7 @@ public struct Param {
     ///     - defaultValue: Value to use if the server doesn't contain this parameter.
     /// - Returns: `true` if the parameter was retrieved from the server, `false` otherwise.
 
-    public static func param<T>(name: String, value: inout T, defaultValue: T) -> Bool {
+    public func param<T>(name: String, value: inout T, defaultValue: T) -> Bool {
         if has(key: name) && get(name, &value) {
             return true
         }
@@ -290,13 +294,13 @@ public struct Param {
     /// - returns: The parameter value retrieved from the parameter server, or
     /// defaultValue if unavailable.
 
-    public static func param<T>(name: String, defaultValue: T) -> T {
+    public func param<T>(name: String, defaultValue: T) -> T {
         var value = defaultValue
         _ = param(name: name, value: &value, defaultValue: defaultValue )
         return value
     }
 
-    static func paramUpdateCallback(params: XmlRpcValue) -> XmlRpcValue {
+    func paramUpdateCallback(params: XmlRpcValue) -> XmlRpcValue {
         update(key: params[1].string, value: params[2])
         return XmlRpcValue(anyArray: [1, "", 0])
     }
@@ -314,8 +318,8 @@ public struct Param {
     /// - Returns: true if the parameter was found, false otherwise.
 
 
-    public static func search(key: String, result: inout String) -> Bool {
-        return search(ns: Ros.ThisNode.getName(), key: key, result: &result)
+    public func search(key: String, result: inout String) -> Bool {
+        return search(ns: ros.getName(), key: key, result: &result)
     }
 
 
@@ -334,13 +338,13 @@ public struct Param {
     /// - Returns: true if the parameter was found, false otherwise.
 
 
-    public static func search(ns: String, key: String, result: inout String) -> Bool {
+    public func search(ns: String, key: String, result: inout String) -> Bool {
 
         // searchParam needs a separate form of remapping -- remapping on the unresolved name, rather than the
         // resolved one.
 
         var remapped = key
-        if let it = Names.getUnresolvedRemappings()[key] {
+        if let it = ros.getUnresolvedRemappings()[key] {
             remapped = it
         }
 
@@ -371,14 +375,14 @@ public struct Param {
     ///     - invalidName    if the key is not a valid graph resource name
 
 
-    public static func set<T>(key: String, value: T) {
-        guard let mappedKey = Names.resolve(name: key) else {
+    public func set<T>(key: String, value: T) {
+        guard let mappedKey = ros.resolve(name: key) else {
             ROS_ERROR("Could not set parameter \(key)")
             return
         }
 
         let v = XmlRpcValue(any: value)
-        let params = XmlRpcValue(anyArray: [ThisNode.getName(), mappedKey, v])
+        let params = XmlRpcValue(anyArray: [ros.getName(), mappedKey, v])
         do {
             let parameter = try Master.shared.execute(method: "setParam", request: params).wait()
             ROS_DEBUG("set<T> response: \(parameter)")
@@ -391,8 +395,8 @@ public struct Param {
         }
     }
 
-    private static func getImpl(key: String, useCache: Bool) -> XmlRpcValue? {
-        guard var mappedKey = Names.resolve(name: key) else {
+    private func getImpl(key: String, useCache: Bool) -> XmlRpcValue? {
+        guard var mappedKey = ros.resolve(name: key) else {
             return nil
         }
 
@@ -418,7 +422,7 @@ public struct Param {
                     }
                 } else {
                     if gSubscribedParameters.insert(mappedKey).inserted {
-                        let params = XmlRpcValue(anyArray: [ThisNode.getName(),
+                        let params = XmlRpcValue(anyArray: [ros.getName(),
                                                             XMLRPCManager.instance.serverURI, mappedKey])
 
                         do {
@@ -440,7 +444,7 @@ public struct Param {
             return value
         }
 
-        let params = XmlRpcValue(anyArray: [ThisNode.getName(), mappedKey])
+        let params = XmlRpcValue(anyArray: [ros.getName(), mappedKey])
         do {
             let v = try Master.shared.execute(method: "getParam", request: params).wait()
             if v.isArray && v.size() == 1 {
@@ -463,15 +467,15 @@ public struct Param {
     }
 
 
-    private static func update(key: String, value: XmlRpcValue) {
+    private func update(key: String, value: XmlRpcValue) {
         let cleanKey = Names.clean(key)
         ROS_DEBUG("cached_parameters: Received parameter update for key [\(cleanKey)] new value: [\(value)]")
 
         parameterQueue.async {
-            if gSubscribedParameters.contains(cleanKey) {
-                gParameters[cleanKey] = value
+            if self.gSubscribedParameters.contains(cleanKey) {
+                self.gParameters[cleanKey] = value
             }
-            invalidateParentParams(cleanKey)
+            self.invalidateParentParams(cleanKey)
         }
     }
 

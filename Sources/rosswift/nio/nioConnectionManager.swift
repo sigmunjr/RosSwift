@@ -20,6 +20,8 @@ final class ConnectionHandler: ChannelInboundHandler {
     private var subscriber: Ros.TransportSubscriberLink?
     private var serviceclient: ServiceClientLink?
 
+    private let ros: Ros
+
     var header = Header()
 
     func channelInactive(context: ChannelHandlerContext) {
@@ -29,6 +31,9 @@ final class ConnectionHandler: ChannelInboundHandler {
         context.fireChannelInactive()
     }
 
+    init(ros: Ros) {
+        self.ros = ros
+    }
 
     enum State {
         case header
@@ -84,8 +89,8 @@ final class ConnectionHandler: ChannelInboundHandler {
             if let topic = readMap["topic"], let remote = context.remoteAddress {
                 let conn = Nio.Connection(transport: context.channel, header: header)
                 ROS_DEBUG("Connection: Creating TransportSubscriberLink for topic [\(topic)] connected to [\(remote)]")
-                let subLink = Ros.TransportSubscriberLink(connection: conn)
-                if subLink.handleHeader(header: header) {
+                let subLink = Ros.TransportSubscriberLink(connection: conn, topicManager: ros.topicManager)
+                if subLink.handleHeader(ros: ros, header: header) {
                     subscriber = subLink
                 } else {
                     subLink.drop()
@@ -96,7 +101,7 @@ final class ConnectionHandler: ChannelInboundHandler {
 
                 let link = ServiceClientLink()
                 link.initialize(connection: conn)
-                if link.handleHeader(header: header) {
+                if link.handleHeader(header: header, ros: ros) {
                     serviceclient = link
                 }
                 state = .serviceCall
@@ -138,11 +143,13 @@ final class ConnectionHandler: ChannelInboundHandler {
 extension Ros {
 
 final class ConnectionManager {
-    static var instance = ConnectionManager()
+//    static var instance = ConnectionManager()
     var channel: Channel?
     var boot: ServerBootstrap?
+    unowned var ros: Ros!
 
-    private init() {}
+    internal init() {
+    }
 
     func getTCPPort() -> Int32 {
         return Int32(channel?.localAddress?.port ?? 0)
@@ -167,7 +174,8 @@ final class ConnectionManager {
     func addConnection(connection: ConnectionProtocol) {
     }
 
-    func start() {
+    func start(ros: Ros) {
+        self.ros = ros
         initialize(group: threadGroup)
         do {
             channel = try boot?.bind(host: Ros.Network.getHost(), port: 0).wait()
@@ -187,7 +195,7 @@ final class ConnectionManager {
             .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_KEEPALIVE), value: 1)
 
             // Set the handlers that are appled to the accepted Channels
-            .childChannelInitializer { $0.pipeline.addHandlers([ByteToMessageHandler(Nio.MessageDelimiterCodec()), ConnectionHandler()]) }
+            .childChannelInitializer { $0.pipeline.addHandlers([ByteToMessageHandler(Nio.MessageDelimiterCodec()), ConnectionHandler(ros: self.ros)]) }
 
             // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
             .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)

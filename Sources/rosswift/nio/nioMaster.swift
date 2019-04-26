@@ -340,7 +340,7 @@ struct XMLRPCClient {
         }
 
 //        func getTopics() -> [TopicInfo]? {
-//            let args = XmlRpcValue(array: [XmlRpcValue(str: Ros.ThisNode.getName()), XmlRpcValue(str: "")])
+//            let args = XmlRpcValue(array: [XmlRpcValue(str: ros.getName()), XmlRpcValue(str: "")])
 //            do {
 //                let payload = try execute(method: "getPublishedTopics", request: args).wait()
 //                return payload.map { TopicInfo(name: $0[0].string, dataType: $0[1].string )}
@@ -350,8 +350,8 @@ struct XMLRPCClient {
 //            return nil
 //        }
 
-        func getTopics() -> EventLoopFuture<[TopicInfo]> {
-            let args = XmlRpcValue(array: [XmlRpcValue(str: Ros.ThisNode.getName()), XmlRpcValue(str: "")])
+        func getTopics(callerId: String) -> EventLoopFuture<[TopicInfo]> {
+            let args = XmlRpcValue(array: [XmlRpcValue(str: callerId), XmlRpcValue(str: "")])
             return execute(method: "getPublishedTopics", request: args).map({ (rpc) -> [TopicInfo] in
                 return rpc.map { TopicInfo(name: $0[0].string, dataType: $0[1].string )}
             })

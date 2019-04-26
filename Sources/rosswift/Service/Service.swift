@@ -63,25 +63,25 @@ public struct Service {
     /// - Parameter timeout: The amount of time to wait for before timing out.  If timeout is -1 (default),
     /// waits until the node is shutdown
     /// - Returns: true on success, false otherwise
-    static func waitForService(ros: Ros, serviceName: String, timeout: RosTime.Duration = RosTime.Duration(seconds: TimeInterval(-1))) -> Bool {
-        let mappedNames = Ros.Names.resolve(name: serviceName)
+    static func waitForService(ros: Ros, serviceName: String, timeout: Duration = Duration()) -> Bool {
+        let mappedNames = ros.resolve(name: serviceName)
         let startTime = RosTime.Time.now()
         var printed = false
         var result = false
         while ros.isRunning {
-            if exists(serviceName: serviceName, printFailureReason: !printed) {
+            if exists(ros: ros, serviceName: serviceName, printFailureReason: !printed) {
                 result = true
                 break
             } else {
                 printed = true
-                if timeout >= RosTime.Duration(seconds: 0) {
+                if !timeout.isZero() {
                     let currentTime = RosTime.Time.now()
                     if currentTime - startTime >= timeout {
                         return false
                     }
                 }
 
-                RosTime.Duration(milliseconds: 20).sleep()
+                Duration(milliseconds: 20).sleep()
             }
         }
 
@@ -103,13 +103,13 @@ public struct Service {
     /// could not connect to the advertised host)
     /// - Returns: true if the service is up and available, false otherwise
 
-    static func exists(serviceName: String, printFailureReason: Bool) -> Bool {
-        guard let mappedName = Ros.Names.resolve(name: serviceName) else {
+    static func exists(ros: Ros, serviceName: String, printFailureReason: Bool) -> Bool {
+        guard let mappedName = ros.resolve(name: serviceName) else {
             return false
         }
         
-        if let server = ServiceManager.instance.lookupService(name: mappedName) {
-            let keymap = ["probe": "1", "md5sum": "*", "callerid": Ros.ThisNode.getName(), "service": mappedName]
+        if let server = ros.serviceManager.lookupService(name: mappedName) {
+            let keymap = ["probe": "1", "md5sum": "*", "callerid": ros.getName(), "service": mappedName]
             let transport = Nio.TransportTCP(pipeline: [ByteToMessageHandler(Nio.MessageDelimiterCodec()),
                                                         ByteToMessageHandler(Nio.HeaderMessageCodec()),
                                                         Nio.TransportTCP.Handler(callback: callback)])

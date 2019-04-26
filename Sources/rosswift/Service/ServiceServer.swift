@@ -24,7 +24,7 @@ public final class ServiceServer {
     func unadvertise() {
         if !isUnadvertised {
             isUnadvertised = true
-            _ = ServiceManager.instance.unadvertiseService(name: service)
+            _ = node.ros.serviceManager.unadvertiseService(name: service)
         }
     }
 

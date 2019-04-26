@@ -30,7 +30,7 @@ public final class Subscriber {
 
     deinit {
         ROS_DEBUG("Subscriber on '\(self.topic)' deregistering callbacks.")
-        _ = TopicManager.instance.unsubscribe(topic: topic, helper: helper)
+        _ = node.ros.topicManager.unsubscribe(topic: topic, helper: helper)
     }
 
     func getTopic() -> String {
@@ -38,7 +38,7 @@ public final class Subscriber {
     }
 
     func getNumPublishers() -> Int {
-            return TopicManager.instance.getNumPublishers(topic: topic)
+            return node.ros.topicManager.getNumPublishers(topic: topic)
     }
 
 }

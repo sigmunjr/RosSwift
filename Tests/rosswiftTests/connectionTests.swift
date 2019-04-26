@@ -32,7 +32,6 @@ class connectionTests: XCTestCase {
 
 
     func testNodeHandleConstructionDestruction() {
-        let f = Ros()
 
         let ros = Ros(name: "testNodeHandleConstructionDestruction")
 
@@ -117,7 +116,7 @@ class connectionTests: XCTestCase {
             }
         }
 
-        guard let topics = try? Master.shared.getTopics().wait() else {
+        guard let topics = try? Master.shared.getTopics(callerId: ros.getName()).wait() else {
             XCTFail()
             return
         }
@@ -232,17 +231,17 @@ class connectionTests: XCTestCase {
             do {
                 let pub2 = n.advertise(topic: "/test", message: std_msgs.float64.self)
 
-                let topics1 = Ros.ThisNode.getAdvertisedTopics()
+                let topics1 = ros.getAdvertisedTopics()
                 let t1 = topics1.first(where: { $0 == "/test" })
                 XCTAssertNotNil(t1)
             }
 
-            let topics2 = Ros.ThisNode.getAdvertisedTopics()
+            let topics2 = ros.getAdvertisedTopics()
             let t2 = topics2.first(where: { $0 == "/test" })
             XCTAssertNotNil(t2)
        }
         print("leaving scope")
-        let topics3 = Ros.ThisNode.getAdvertisedTopics()
+        let topics3 = ros.getAdvertisedTopics()
         let t3 = topics3.first(where: { $0 == "/test" })
         XCTAssertNil(t3)
     }

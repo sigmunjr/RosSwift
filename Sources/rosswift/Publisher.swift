@@ -18,11 +18,13 @@ public final class SpecializedPublisher<M: Message>: Publisher {
     var datatype: String { return M.datatype }
     let callbacks: SubscriberCallbacks
     private var unadvertised: Bool
+    let topicManager: Ros.TopicManager
 
-    init(topic: String, message: M.Type, callbacks: SubscriberCallbacks) {
+    init(topicManager: Ros.TopicManager, topic: String, message: M.Type, callbacks: SubscriberCallbacks) {
         self.topic = topic
         self.callbacks = callbacks
         self.unadvertised = false
+        self.topicManager = topicManager
     }
 
     deinit {
@@ -39,10 +41,6 @@ public final class SpecializedPublisher<M: Message>: Publisher {
             _ = topicManager.unadvertisePublisher(topic: topic, callbacks: callbacks)
             ROS_DEBUG("Publisher on '\(topic)' deregistering callbacks.")
         }
-    }
-
-    var topicManager: Ros.TopicManager {
-        return Ros.TopicManager.instance
     }
 
     public func publish(message: Message) {

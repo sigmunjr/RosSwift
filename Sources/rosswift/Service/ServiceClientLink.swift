@@ -22,7 +22,7 @@ final class ServiceClientLink {
         self.connection = connection
     }
 
-    func handleHeader(header: Header) -> Bool {
+    func handleHeader(header: Header, ros: Ros) -> Bool {
         guard let md5sum = header.getValue(key: "md5sum"),
             let service = header.getValue(key: "service"),
             let clientCallerId = header.getValue(key: "callerid") else {
@@ -38,7 +38,7 @@ final class ServiceClientLink {
 
         ROS_DEBUG("Service client [\(clientCallerId)] wants service [\(service)] with md5sum [\(md5sum)]")
 
-        guard let servicePublication = ServiceManager.instance.lookupServicePublication(service: service) else {
+        guard let servicePublication = ros.serviceManager.lookupServicePublication(service: service) else {
             let msg = "received a tcpros connection for a nonexistent service [\(service)]."
             ROS_LOG_ERROR(msg)
             connection?.sendHeaderError(msg)
@@ -70,7 +70,7 @@ final class ServiceClientLink {
                             "response_type": servicePublication.responseDataType,
                             "type": servicePublication.dataType,
                             "md5sum": servicePublication.md5sum,
-                            "callerid": Ros.ThisNode.getName()]
+                            "callerid": ros.getName()]
 
         connection?.writeHeader(keyVals: m).map {
             ROS_DEBUG("data written")

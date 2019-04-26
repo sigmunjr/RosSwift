@@ -22,8 +22,9 @@ final class ServiceServerLink: ChannelInboundHandler {
         let headerRead: Bool
 
         private var isDropped: Bool
+    private let ros: Ros
 
-        init(serviceName: String,
+    init(ros: Ros, serviceName: String,
              persistent: Bool,
              requestMd5sum: String,
              responseMd5sum: String,
@@ -37,6 +38,7 @@ final class ServiceServerLink: ChannelInboundHandler {
             headerWritten = false
             headerRead = false
             isDropped = false
+        self.ros = ros
         }
 
         func initialize(channel: Channel) {
@@ -45,7 +47,7 @@ final class ServiceServerLink: ChannelInboundHandler {
             var header = StringStringMap()
             header["service"] = serviceName
             header["md5sum"] = requestMd5sum
-            header["callerid"] = Ros.ThisNode.getName()
+            header["callerid"] = ros.getName()
             header["persistent"] = persistent ? "1" : "0"
             if let extra = extraOutgoingHeaderValues {
                 for item in extra {
@@ -75,7 +77,7 @@ final class ServiceServerLink: ChannelInboundHandler {
         func onConnectionDropped(note: NSNotification) {
             ROS_ERROR(#""onConnectionDropped" is not fully implemented"#)
             isDropped = true
-            ServiceManager.instance.removeServiceServerLink(client: self)
+            ros.serviceManager.removeServiceServerLink(client: self)
         }
 
     #endif

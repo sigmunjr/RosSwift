@@ -11,23 +11,25 @@ import NIOConcurrencyHelpers
 import StdMsgs
 
     final class ServiceManager {
-        static let instance = ServiceManager()
+//        static let instance = ServiceManager()
 
         var isShuttingDown = Atomic<Bool>(value: false)
         var servicePublications = SynchronizedArray<ServiceProtocol>()
         var serviceServerLinks = SynchronizedArray<ServiceServerLink>()
 
-        var connectionManager: Ros.ConnectionManager { return Ros.ConnectionManager.instance }
+        var connectionManager: Ros.ConnectionManager { return ros.connectionManager }
         var xmlrpcManager: XMLRPCManager { return XMLRPCManager.instance }
+        unowned var ros: Ros!
 
-        private init() {
+        internal init() {
         }
 
         deinit {
             shutdown()
         }
 
-        func start() {
+        func start(ros: Ros) {
+            self.ros = ros
             isShuttingDown.store(false)
             ROS_DEBUG("servicemanager start")
         }
@@ -71,7 +73,7 @@ import StdMsgs
             servicePublications.append(pub)
 
             let uri = "rosrpc://\(Ros.Network.getHost()):\(connectionManager.getTCPPort())"
-            let params = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), ops.service, uri, xmlrpcManager.serverURI])
+            let params = XmlRpcValue(anyArray: [ros.getName(), ops.service, uri, xmlrpcManager.serverURI])
             do {
                 let _ = try Master.shared.execute(method: "registerService", request: params).wait()
             } catch {
@@ -102,7 +104,7 @@ import StdMsgs
 
         private func unregisterService(service: String) {
             let args = XmlRpcValue(anyArray:
-                [Ros.ThisNode.getName(),
+                [ros.getName(),
                 service,
                 "rosrpc://\(Ros.Network.getHost()):\(connectionManager.getTCPPort())"])
             do {
@@ -146,7 +148,8 @@ import StdMsgs
             let trans = Nio.TransportTCP(pipeline: [])
 
             let c = trans.connect(host: server.host, port: Int(server.port)).map { channel -> ServiceServerLink in
-                let client = ServiceServerLink(serviceName: service,
+                let client = ServiceServerLink(ros: self.ros,
+                                               serviceName: service,
                                                persistent: persistent,
                                                requestMd5sum: requestMd5sum,
                                                responseMd5sum: responseMd5sum,
@@ -172,7 +175,7 @@ import StdMsgs
         }
 
         func lookupService(name: String) -> (host: String, port: UInt16)? {
-            let args = XmlRpcValue(anyArray: [Ros.ThisNode.getName(), name])
+            let args = XmlRpcValue(anyArray: [ros.getName(), name])
             do {
                 let payload = try Master.shared.execute(method: "lookupService", request: args).wait()
                 guard payload.valid() else {

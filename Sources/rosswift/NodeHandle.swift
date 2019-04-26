@@ -49,13 +49,13 @@ extension Ros {
             return Ros.refCount
         }
 
-        private let ros: Ros
+        internal let ros: Ros
 
         // MARK: Life
 
         internal init(ros: Ros) {
             self.ros = ros
-            namespace = Ros.ThisNode.getNamespace()
+            namespace = ros.getNamespace()
             construct(ns: "")
         }
 
@@ -74,9 +74,9 @@ extension Ros {
 
         public init?(ros: Ros, ns: String, remappings: StringStringMap? = nil) {
             self.ros = ros
-            namespace = Ros.ThisNode.getNamespace()
+            namespace = ros.getNamespace()
             if ns.starts(with: "~") {
-                guard let resolved = Names.resolve(name: ns) else {
+                guard let resolved = ros.resolve(name: ns) else {
                     return nil
                 }
                 construct(ns: resolved)
@@ -177,8 +177,8 @@ extension Ros {
                                                 hasTrackedObject: options.trackedObject != nil,
                                                 trackedObject: options.trackedObject)
 
-            if TopicManager.instance.advertise(ops: options, callbacks: callbacks) {
-                return SpecializedPublisher(topic: options.topic, message: M.self, callbacks: callbacks)
+            if ros.topicManager.advertise(ops: options, callbacks: callbacks) {
+                return SpecializedPublisher(topicManager: ros.topicManager, topic: options.topic, message: M.self, callbacks: callbacks)
             }
 
             return nil
@@ -234,7 +234,7 @@ extension Ros {
             if options.callbackQueue == nil {
                 options.callbackQueue = getCallbackQueue()
             }
-            if ServiceManager.instance.advertiseService(options) {
+            if ros.serviceManager.advertiseService(options) {
                 return ServiceServer(service: options.service, node: self)
             }
             return nil
@@ -341,7 +341,7 @@ extension Ros {
                 return false
             }
 
-            return Ros.Param.del(key: name)
+            return ros.param.del(key: name)
         }
 
         /// Returns the callback queue associated with this NodeHandle.
@@ -361,7 +361,7 @@ extension Ros {
         /// - Returns: `true` if the parameter value was retrieved, `false` otherwise
 
         func get<T>(parameter: String, value: inout T) -> Bool {
-            return Ros.Param.get(parameter, &value)
+            return ros.param.get(parameter, &value)
         }
 
         /// Get a parameter value from the parameter server with local cahcing.
@@ -380,7 +380,7 @@ extension Ros {
         /// - Returns: `true` if the parameter value was retrieved, `false` otherwise
 
         func getCached<T>(parameter: String, value: inout T) -> Bool {
-            return Ros.Param.getCached(parameter, &value)
+            return ros.param.getCached(parameter, &value)
         }
 
         /// Check whether a parameter exists on the parameter server.
@@ -396,7 +396,7 @@ extension Ros {
             }
 
 
-            return Ros.Param.has(key: name)
+            return ros.param.has(key: name)
         }
 
         /// Return value from parameter server, or default if unavailable.
@@ -489,7 +489,7 @@ extension Ros {
                 return remapName(name: final)
             }
 
-            return Names.resolve(name: final, remap: false)
+            return ros.resolve(name: final, remap: false)
 
         }
 
@@ -520,7 +520,7 @@ extension Ros {
                 return false
             }
 
-            return Ros.Param.search(ns: namespace, key: remapped, result: &result)
+            return ros.param.search(ns: namespace, key: remapped, result: &result)
         }
 
         /// Create a client for a service
@@ -546,7 +546,7 @@ extension Ros {
 
             /// FIXME: Find a better way to deal with wrong names
             let name = resolveName(name: service) ?? service
-            let client = ServiceClient(name: name, md5sum: md5sum, persistent: persistent, headerValues: headerValues)
+            let client = ServiceClient(ros: ros, name: name, md5sum: md5sum, persistent: persistent, headerValues: headerValues)
 
             if !client.isValid() {
                 ROS_ERROR("invalid client")
@@ -572,7 +572,7 @@ extension Ros {
         ///     - value: The value to be inserted.
 
         func set<T>(parameter: String, value: T) {
-            Ros.Param.set(key: parameter, value: value)
+            ros.param.set(key: parameter, value: value)
         }
 
 
@@ -674,7 +674,7 @@ extension Ros {
             }
 
             // If not in our local remappings, perhaps in the global ones
-            return Names.remap(name: resolved)
+            return ros.remap(name: resolved)
         }
 
         private func construct(ns: String) {
@@ -701,7 +701,7 @@ extension Ros {
             }
             options.topic = topic
 
-            if TopicManager.instance.subscribeWith(options: options) {
+            if ros.topicManager.subscribeWith(options: options) {
                 return Subscriber(topic: options.topic, node: self, helper: options.helper)
             }
 

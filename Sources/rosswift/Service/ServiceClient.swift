@@ -23,6 +23,7 @@ internal final class ServiceClient {
     let headerValue: StringStringMap?
     let serviceMd5sum: String
     var isShutdown: Bool = false
+    let ros: Ros
 
     deinit {
         shutdown()
@@ -51,14 +52,15 @@ internal final class ServiceClient {
     }
 
 
-    init(name: String, md5sum: String, persistent: Bool = false, headerValues: StringStringMap? = nil) {
+    init(ros: Ros, name: String, md5sum: String, persistent: Bool = false, headerValues: StringStringMap? = nil) {
+        self.ros = ros
         self.name = name
         self.persistent = persistent
         self.headerValue = headerValues
         self.serviceMd5sum = md5sum
 
         if persistent {
-            serverLink = ServiceManager.instance.createServiceServerLink(
+            serverLink = ros.serviceManager.createServiceServerLink(
                 service: name,
                 persistent: persistent,
                 requestMd5sum: serviceMd5sum,
@@ -106,7 +108,7 @@ internal final class ServiceClient {
 
         if persistent {
             if serverLink == nil {
-                serverLink = ServiceManager.instance.createServiceServerLink(
+                serverLink = ros.serviceManager.createServiceServerLink(
                     service: name,
                     persistent: persistent,
                     requestMd5sum: serviceMd5sum,
@@ -120,7 +122,7 @@ internal final class ServiceClient {
             }
             link = serverLink
         } else {
-            link = ServiceManager.instance.createServiceServerLink(
+            link = ros.serviceManager.createServiceServerLink(
                 service: name,
                 persistent: persistent,
                 requestMd5sum: serviceMd5sum,
@@ -142,7 +144,7 @@ internal final class ServiceClient {
     }
 
     func exists() -> Bool {
-        return Service.exists(serviceName: name, printFailureReason: false)
+        return Service.exists(ros: ros, serviceName: name, printFailureReason: false)
     }
 
     func getService() -> String {

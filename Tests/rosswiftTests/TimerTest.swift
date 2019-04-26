@@ -75,11 +75,7 @@ class SteadyTimerHelper {
 
 class TimerTest: XCTestCase {
 
-    var ros: Ros!
-
     override func setUp() {
-        ros = Ros()
-        _ = ros.initialize(argv: &CommandLine.arguments, name: "TimerTest")
     }
 
     override func tearDown() {
@@ -87,6 +83,7 @@ class TimerTest: XCTestCase {
     }
 
     func testSingleSteadyTimeCallback() {
+        let ros = Ros(name: "testSingleSteadyTimeCallback")
         let n = ros.createNode()
 
         let helper = SteadyTimerHelper(node: n, 0.01)
@@ -101,6 +98,8 @@ class TimerTest: XCTestCase {
     }
 
     func testMultipleSteadyTimeCallbacks() {
+        let ros = Ros(name: "testMultipleSteadyTimeCallbacks")
+
         let n = ros.createNode()
         let count = 10
         var helpers = [SteadyTimerHelper]()

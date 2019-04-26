@@ -125,10 +125,10 @@ if let respons : TestStringString.Response = try? Service.call(node: n, serviceN
 
 var parameter: Int = 0
 
-if Ros.Param.getCached("int", &parameter) {
+if ros.param.getCached("int", &parameter) {
     print("parameter int = \(parameter)")
 }
-Ros.Param.set(key: "~parm", value: ["T":34.3,"I":45.0,"D":0.34])
+ros.param.set(key: "~parm", value: ["T":34.3,"I":45.0,"D":0.34])
 
 var rate = Rate(frequency: 1.0)
 
