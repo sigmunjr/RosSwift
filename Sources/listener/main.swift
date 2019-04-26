@@ -33,11 +33,7 @@ func chatterCallbackEvent(event: MessageEvent<String>) {
     print("I got [\(msg) from \(event.connectionHeader["callerid"] ?? "<no caller id>")")
 }
 
-guard let ros = Ros() else {
-    exit(1)
-}
-
-let future = ros.initialize(argv: &CommandLine.arguments, name: "listener")
+let ros = Ros(argv: &CommandLine.arguments, name: "listener")
 
 
 guard let n = ros.createNode(ns: "~") else {
@@ -62,11 +58,11 @@ let cab = n.subscribe(topic: "/chatter", queueSize: 1, callback: chatterCallback
 
 n.spinThread()
 
-do {
-    try future.wait()
-} catch {
-    print(error.localizedDescription)
-}
+//do {
+//    try future.wait()
+//} catch {
+//    print(error.localizedDescription)
+//}
 
 
 

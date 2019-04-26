@@ -139,7 +139,7 @@ final class Subscription {
 
         ROS_DEBUG("Creating intraprocess link for topic [\(name)]")
 
-        let pubLink = IntraProcessPublisherLink(parent: self, xmlrpcUri: XMLRPCManager.instance.serverURI, transportHints: transportHints)
+        let pubLink = IntraProcessPublisherLink(parent: self, xmlrpcUri: ros.xmlrpcManager.serverURI, transportHints: transportHints)
         let subLink = IntraProcessSubscriberLink(parent: localConnection)
         _ = pubLink.setPublisher(ros: ros, publisher: subLink)
         subLink.setSubscriber(ros: ros, subscriber: pubLink)
@@ -183,7 +183,7 @@ final class Subscription {
 
         }
 
-        let serverURI = XMLRPCManager.instance.serverURI
+        let serverURI = ros.xmlrpcManager.serverURI
         subtractions.forEach { link in
             let uri = link.publisherXmlrpcUri
             if uri != serverURI {

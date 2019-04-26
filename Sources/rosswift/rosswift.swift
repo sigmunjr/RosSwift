@@ -76,6 +76,7 @@ public final class Ros: Hashable {
     let serviceManager: ServiceManager
     let topicManager: TopicManager
     let connectionManager: ConnectionManager
+    let xmlrpcManager: XMLRPCManager
     let name: String
     internal let namespace: String
     internal var globalRemappings = StringStringMap()
@@ -160,19 +161,22 @@ public final class Ros: Hashable {
         self.name = node_name
 
         isInitialized = true
+        xmlrpcManager = XMLRPCManager()
+
         serviceManager = ServiceManager()
         topicManager = TopicManager()
         connectionManager = ConnectionManager()
         param = Param()
+        param.ros = self
         param.initialize(remappings: remappings)
-        fileLog = FileLog(thisNodeName: getName(), remappings: remappings)
+
+        fileLog = FileLog(thisNodeName: name, remappings: remappings)
 
         if !Ros.atexitRegistered {
             Ros.atexitRegistered = true
             atexit(atexitCallback)
         }
 
-        param.ros = self
         Ros.globalRos.insert(self)
     }
 
@@ -380,7 +384,7 @@ public final class Ros: Hashable {
 
         _ = param.param(name: "/tcp_keepalive", value: &TransportTCP.useKeepalive, defaultValue: TransportTCP.useKeepalive)
 
-        guard XMLRPCManager.instance.bind(function: "shutdown", cb: shutdownCallback) else {
+        guard xmlrpcManager.bind(function: "shutdown", cb: shutdownCallback) else {
             fatalError("Could not bind function")
         }
 
@@ -389,7 +393,7 @@ public final class Ros: Hashable {
         topicManager.start(ros: self)
         serviceManager.start(ros: self)
         connectionManager.start(ros: self)
-        XMLRPCManager.instance.start()
+        xmlrpcManager.start()
 
         if !initOptions.contains(.noSigintHandler) {
             signal(SIGINT, basicSigintHandler)
@@ -438,7 +442,7 @@ public final class Ros: Hashable {
 
         ROS_INFO("Started node [\(name)], " +
             "pid [\(getpid())], bound on [\(Network.getHost())], " +
-            "xmlrpc port [\(XMLRPCManager.instance.serverPort)], " +
+            "xmlrpc port [\(xmlrpcManager.serverPort)], " +
             "tcpros port [\(connectionManager.getTCPPort())], using [\(Time.isSimTime() ? "sim":"real")] time")
 
     }
@@ -465,7 +469,7 @@ public final class Ros: Hashable {
                 topicManager.shutdown()
                 serviceManager.shutdown()
                 connectionManager.shutdown()
-                XMLRPCManager.instance.shutdown()
+                xmlrpcManager.shutdown()
             }
 
             isStarted = false

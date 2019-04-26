@@ -41,7 +41,7 @@ extension Ros {
         }
 
         var xmlrpcManager: XMLRPCManager {
-            return XMLRPCManager.instance
+            return ros.xmlrpcManager
         }
 
         unowned var ros: Ros!

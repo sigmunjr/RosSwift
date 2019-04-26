@@ -18,7 +18,7 @@ import StdMsgs
         var serviceServerLinks = SynchronizedArray<ServiceServerLink>()
 
         var connectionManager: Ros.ConnectionManager { return ros.connectionManager }
-        var xmlrpcManager: XMLRPCManager { return XMLRPCManager.instance }
+        var xmlrpcManager: XMLRPCManager { return ros.xmlrpcManager }
         unowned var ros: Ros!
 
         internal init() {

@@ -19,7 +19,7 @@ struct XmlRpc {
 
 final class XMLRPCManager {
 
-    static let instance = XMLRPCManager()
+//    static let instance = XMLRPCManager()
 
     var functions = [String: FunctionInfo]()
     var server = XMLRPCServer(group: threadGroup)
@@ -37,7 +37,9 @@ final class XMLRPCManager {
         let wrapper: XMLRPCCallWrapper
     }
 
-    private init() {}
+    internal init() {
+
+    }
 
     func start() {
         server.bindAndListen(port: 0)

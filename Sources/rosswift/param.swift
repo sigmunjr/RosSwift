@@ -239,7 +239,7 @@ public final class Param {
             }
         }
 
-        if !XMLRPCManager.instance.bind(function: "paramUpdate", cb: paramUpdateCallback) {
+        if !ros.xmlrpcManager.bind(function: "paramUpdate", cb: paramUpdateCallback) {
             ROS_DEBUG("\(#function) Could not bind paramUpdate")
         }
     }
@@ -423,7 +423,7 @@ public final class Param {
                 } else {
                     if gSubscribedParameters.insert(mappedKey).inserted {
                         let params = XmlRpcValue(anyArray: [ros.getName(),
-                                                            XMLRPCManager.instance.serverURI, mappedKey])
+                                                            ros.xmlrpcManager.serverURI, mappedKey])
 
                         do {
                             let result = try Master.shared.execute(method: "subscribeParam", request: params).wait()
