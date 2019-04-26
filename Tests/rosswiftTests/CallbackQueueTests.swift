@@ -217,9 +217,9 @@ class CallbackQueueTests: XCTestCase {
             threads.append(thread)
             thread.start()
         }
-        let start = RosTime.WallTime.now()
+        let start = RosTime.WallTime.now
         var i = 0
-        while (RosTime.WallTime.now() - start).nanoseconds < RosTime.Duration(seconds: 5).nanoseconds {
+        while (RosTime.WallTime.now - start).nanoseconds < RosTime.Duration(seconds: 5).nanoseconds {
             queue.addCallback(callback: cb)
             i += 1
         }

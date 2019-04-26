@@ -22,21 +22,21 @@ public struct Duration: DurationBase {
             return rosWallsleep(sec: UInt32(sec), nsec: UInt32(nsec))
         }
 
-        var start = Time.now()
+        var start = Time.now
         var end = start + self
         if start.isZero() {
             end = Time(nanosec: UInt64.max)
         }
 
         var didSleep = false
-        while !Time.gStopped && Time.now() < end {
+        while !Time.gStopped && Time.now < end {
             _ = rosWallsleep(sec: 0, nsec: 1_000_000)
             didSleep = true
             if start.isZero() {
-                start = Time.now()
+                start = Time.now
                 end = start + self
             }
-            if Time.now() < start {
+            if Time.now < start {
                 return false
             }
         }

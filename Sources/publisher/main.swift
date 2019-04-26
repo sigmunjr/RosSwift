@@ -135,7 +135,7 @@ var rate = Rate(frequency: 1.0)
 var j : Int32 = 0
 while ros.ok {
     j += 1
-    let time = RosTime.Time.now()
+    let time = Time.now
     let sm = geometry_msgs.Point(x: 1.0+Float64(j), y: Float64(j), z: sin(Float64(j)))
     natter_pub.publish(message: sm)
     chatter_pub.publish(message: std_msgs.string("Hello \(j)"))

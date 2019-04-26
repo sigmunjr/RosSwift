@@ -30,8 +30,7 @@ final class SingleThreadSpinner: Spinner {
         }
 
         let timeout = RosTime.WallDuration(milliseconds: 100)
-        let n = Ros.NodeHandle(ros: ros)
-        while n.isOK {
+        while ros.isRunning {
             useQueue.callAvailable(timeout: timeout)
         }
         SpinnerMonitor.main.remove(queue: useQueue)
@@ -62,12 +61,12 @@ final class AsyncSpinnner {
     private let threadCount: Int
     private let callbackQueue: CallbackQueue
     private var running = Atomic<Bool>(value: false)
-    private let node: Ros.NodeHandle
+    private let ros: Ros
 
     init(ros: Ros, threadCount: Int, queue: CallbackQueue? = nil) {
         self.callbackQueue = queue != nil ? queue! : ros.getGlobalCallbackQueue()
         self.threadCount = threadCount != 0 ? threadCount : System.coreCount
-        self.node = Ros.NodeHandle(ros: ros)
+        self.ros = ros
     }
 
     deinit {
@@ -109,7 +108,7 @@ final class AsyncSpinnner {
         let queue = callbackQueue
         let useCallAvailable = threadCount == 1
         let timeout = RosTime.WallDuration(milliseconds: 100)
-        while running.load() && node.isOK {
+        while running.load() && ros.isRunning {
             if useCallAvailable {
                 queue.callAvailable(timeout: timeout)
             } else {

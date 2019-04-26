@@ -14,14 +14,14 @@ public struct SteadyTime: TimeBase {
         nanoseconds = nanosec
     }
 
-    public static func now() -> SteadyTime {
+    public static var now: SteadyTime {
         var start = timespec()
         clock_gettime(CLOCK_MONOTONIC, &start)
         return SteadyTime(sec: UInt32(start.tv_sec), nsec: UInt32(start.tv_nsec))
     }
 
     public static func - (lhs: SteadyTime, rhs: SteadyTime) -> WallDuration {
-        return WallDuration(nanosec: Int64(lhs.toNSec()) - Int64(rhs.toNSec()))
+        return WallDuration(nanosec: Int64(lhs.nanoseconds) - Int64(rhs.nanoseconds))
     }
 
 }

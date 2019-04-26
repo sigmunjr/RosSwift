@@ -67,9 +67,9 @@ public final class Ros: Hashable {
     var fileLog: FileLog?
     var isShutdownRequested = false
     var isShuttingDown = Atomic<Bool>(value: false)
-    var isRunning = false
+    public private(set) var isRunning = false
     var isStarted = false
-    var isInitialized = false
+//    var isInitialized = false
     let logg = HeliumLogger(.debug)
 //    let thisNode: ThisNode
     public let param: Param
@@ -77,23 +77,28 @@ public final class Ros: Hashable {
     let topicManager: TopicManager
     let connectionManager: ConnectionManager
     let xmlrpcManager: XMLRPCManager
+    let master: Master
+
+    let network: Network
     let name: String
-    internal let namespace: String
+    let namespace: String
+
+    internal var nodeReferenceCount = Atomic<UInt>(value: 0)
     internal var globalRemappings = StringStringMap()
     internal var globalUnresolvedRemappings = StringStringMap()
 
-
     public var ok: Bool { return isRunning }
 
-    public init(name inName: String, remappings: StringStringMap = [:], options: InitOption = []) {
+    public init(name inName: String, namespace: String = "", remappings: StringStringMap = [:], options: InitOption = []) {
         initOptions = options
         isRunning = true
 
         check_ipv6_environment()
-        Network.initialize(remappings: remappings)
-        Master.shared.initialize(remappings: remappings)
+        network = Network(remappings: remappings)
+        master = Master(group: threadGroup)
+        master.initialize(remappings: remappings)
 
-        var ns = ""
+        var ns = namespace
 
         if let namespaceEnvironment = ProcessInfo.processInfo.environment["ROS_NAMESPACE"] {
             ns = namespaceEnvironment
@@ -131,8 +136,8 @@ public final class Ros: Hashable {
         // It must be done before we resolve g_name, because otherwise the name will not get remapped.
         for it in remappings {
             if !it.key.isEmpty && it.key.first! != "_" && it.key != node_name {
-                if let resolvedKey = Ros.Names.resolve(ns: ns, name: it.key),
-                    let resolvedName = Ros.Names.resolve(ns: ns, name: it.value) {
+                if let resolvedKey = Names.resolve(ns: ns, name: it.key),
+                    let resolvedName = Names.resolve(ns: ns, name: it.value) {
                     globalRemappings[resolvedKey] = resolvedName
                     globalUnresolvedRemappings[it.key] = it.value
                 } else {
@@ -152,7 +157,7 @@ public final class Ros: Hashable {
         node_name = Names.resolve(ns: ns, name: node_name)!
 
         if options.contains(.anonymousName) && !disableAnon {
-            node_name.append("_\(RosTime.WallTime.now().toNSec())")
+            node_name.append("_\(WallTime.now.nanoseconds)")
         }
 
         Ros.Console.setFixedFilterToken(key: "node", val: node_name)
@@ -160,8 +165,8 @@ public final class Ros: Hashable {
         self.namespace = ns
         self.name = node_name
 
-        isInitialized = true
-        xmlrpcManager = XMLRPCManager()
+//        isInitialized = true
+        xmlrpcManager = XMLRPCManager(host: network.getHost())
 
         serviceManager = ServiceManager()
         topicManager = TopicManager()
@@ -178,6 +183,19 @@ public final class Ros: Hashable {
         }
 
         Ros.globalRos.insert(self)
+
+        Log.logger = logg
+        #if os(Linux)
+        logg.colored = true
+        logg.details = true
+        #else
+        logg.colored = !amIBeingDebugged()
+        logg.details = amIBeingDebugged()
+        #endif
+        logg.dateFormat = "HH:mm:ss.SSS"
+        ROS_INFO("Ros is initializing")
+
+
     }
 
     public convenience init(argv: inout [String], name: String, options: InitOption = []) {
@@ -200,17 +218,6 @@ public final class Ros: Hashable {
         self.init(name: name, remappings: remappings, options: options)
 
 
-        Log.logger = logg
-        #if os(Linux)
-        logg.colored = true
-        logg.details = true
-        #else
-        logg.colored = !amIBeingDebugged()
-        logg.details = amIBeingDebugged()
-        #endif
-        logg.dateFormat = "HH:mm:ss.SSS"
-        ROS_INFO("Ros is initializing")
-
     }
 
 
@@ -228,7 +235,7 @@ public final class Ros: Hashable {
     }
 
     public func createNode() -> NodeHandle {
-        return NodeHandle(ros: self)
+        return NodeHandle(ros: self)!
     }
 
 
@@ -236,7 +243,7 @@ public final class Ros: Hashable {
         return NodeHandle(ros: self, ns: ns, remappings: remappings)
     }
 
-    public func createNode(parent: Ros.NodeHandle, ns: String = "") -> NodeHandle {
+    public func createNode(parent: NodeHandle, ns: String = "") -> NodeHandle {
         return NodeHandle(parent: parent, ns: ns)
     }
 
@@ -342,7 +349,7 @@ public final class Ros: Hashable {
 //
 //        check_ipv6_environment()
 //        Network.initialize(remappings: remappings)
-//        Master.shared.initialize(remappings: remappings)
+//        ros.master.initialize(remappings: remappings)
 //        ThisNode.initialize(name: name, remappings: remappings, options: options)
 //        fileLog = FileLog(remappings: remappings)
 //        Param.initialize(remappings: remappings)
@@ -393,7 +400,7 @@ public final class Ros: Hashable {
         topicManager.start(ros: self)
         serviceManager.start(ros: self)
         connectionManager.start(ros: self)
-        xmlrpcManager.start()
+        xmlrpcManager.start(host: network.getHost())
 
         if !initOptions.contains(.noSigintHandler) {
             signal(SIGINT, basicSigintHandler)
@@ -441,7 +448,7 @@ public final class Ros: Hashable {
         }
 
         ROS_INFO("Started node [\(name)], " +
-            "pid [\(getpid())], bound on [\(Network.getHost())], " +
+            "pid [\(getpid())], bound on [\(network.getHost())], " +
             "xmlrpc port [\(xmlrpcManager.serverPort)], " +
             "tcpros port [\(connectionManager.getTCPPort())], using [\(Time.isSimTime() ? "sim":"real")] time")
 

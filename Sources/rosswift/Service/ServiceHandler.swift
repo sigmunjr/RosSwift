@@ -9,7 +9,7 @@ import Foundation
 import NIO
 import StdMsgs
 
-final class ServiceHandler: ChannelInboundHandler {
+internal final class ServiceHandler: ChannelInboundHandler {
     enum ServiceState {
         case header
         case message

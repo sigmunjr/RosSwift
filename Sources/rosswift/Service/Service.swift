@@ -24,7 +24,7 @@ public struct Service {
     /// - Returns: A future with the response
 
 
-    public static func call<MReq: ServiceMessage, MRes: ServiceMessage>(node: Ros.NodeHandle, serviceName: String, req: MReq) -> EventLoopFuture<MRes> {
+    public static func call<MReq: ServiceMessage, MRes: ServiceMessage>(node: NodeHandle, serviceName: String, req: MReq) -> EventLoopFuture<MRes> {
 
         // name is resolved in serviceClient
 
@@ -32,11 +32,11 @@ public struct Service {
         return client.call(req: req)
     }
 
-    static func call<Service: ServiceProt>(node: Ros.NodeHandle, name: String, service: inout Service) -> Bool {
+    static func call<Service: ServiceProt>(node: NodeHandle, name: String, service: inout Service) -> Bool {
         return call(node: node, serviceName: name, req: service.request, response: &service.response)
     }
 
-    static func call<MReq: ServiceMessage, MRes: ServiceMessage>(node: Ros.NodeHandle, serviceName: String, req: MReq, response: inout MRes)  -> Bool {
+    static func call<MReq: ServiceMessage, MRes: ServiceMessage>(node: NodeHandle, serviceName: String, req: MReq, response: inout MRes)  -> Bool {
         do {
             let resp: MRes = try call(node: node, serviceName: serviceName, req: req).wait()
             response = resp
@@ -65,7 +65,7 @@ public struct Service {
     /// - Returns: true on success, false otherwise
     static func waitForService(ros: Ros, serviceName: String, timeout: Duration = Duration()) -> Bool {
         let mappedNames = ros.resolve(name: serviceName)
-        let startTime = RosTime.Time.now()
+        let startTime = Time.now
         var printed = false
         var result = false
         while ros.isRunning {
@@ -75,7 +75,7 @@ public struct Service {
             } else {
                 printed = true
                 if !timeout.isZero() {
-                    let currentTime = RosTime.Time.now()
+                    let currentTime = Time.now
                     if currentTime - startTime >= timeout {
                         return false
                     }

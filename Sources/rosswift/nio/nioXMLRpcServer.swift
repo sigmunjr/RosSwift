@@ -239,14 +239,13 @@ final class XMLRPCServer {
 
     }
 
-    func bindAndListen(port: Int) {
+    func bindAndListen(host: String, port: Int) {
         do {
-            let host = Ros.Network.getHost()
             channel = try boot?.bind(host: host, port: port).wait()
             let p = channel?.localAddress?.port ?? 0
             ROS_DEBUG("Service up and running on \(host):\(p)")
         } catch {
-            ROS_ERROR("bind failed to [\(Ros.Network.getHost())], \(error)")
+            ROS_ERROR("bind failed to [\(host)], \(error)")
         }
     }
 

@@ -140,9 +140,7 @@ final class ConnectionHandler: ChannelInboundHandler {
 
 }
 
-extension Ros {
-
-final class ConnectionManager {
+internal final class ConnectionManager {
 //    static var instance = ConnectionManager()
     var channel: Channel?
     var boot: ServerBootstrap?
@@ -178,7 +176,7 @@ final class ConnectionManager {
         self.ros = ros
         initialize(group: threadGroup)
         do {
-            channel = try boot?.bind(host: Ros.Network.getHost(), port: 0).wait()
+            channel = try boot?.bind(host: ros.network.getHost(), port: 0).wait()
             ROS_DEBUG("listening channel on port [\(channel?.localAddress?.host ?? "unknown host"):\(getTCPPort())]")
 
         } catch {
@@ -195,7 +193,10 @@ final class ConnectionManager {
             .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_KEEPALIVE), value: 1)
 
             // Set the handlers that are appled to the accepted Channels
-            .childChannelInitializer { $0.pipeline.addHandlers([ByteToMessageHandler(Nio.MessageDelimiterCodec()), ConnectionHandler(ros: self.ros)]) }
+            .childChannelInitializer {
+                $0.pipeline.addHandlers([ByteToMessageHandler(Nio.MessageDelimiterCodec()),
+                                         ConnectionHandler(ros: self.ros)])
+            }
 
             // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
             .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
@@ -204,7 +205,5 @@ final class ConnectionManager {
             .childChannelOption(ChannelOptions.recvAllocator, value: AdaptiveRecvByteBufferAllocator())
 
     }
-
-}
 
 }

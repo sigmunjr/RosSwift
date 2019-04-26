@@ -216,7 +216,7 @@ final class Subscription {
     func handle(message: SerializedMessage, connectionHeader: StringStringMap, link: PublisherLink) -> Int {
 
         var drops = 0
-        let receiptTime = RosTime.Time.now()
+        let receiptTime = Time.now
 
         callbacksQueue.sync {
             callbacks.forEach { info in
@@ -280,7 +280,7 @@ final class Subscription {
             return false
         }
 
-        let resp = Master.shared.execute(method: "requestTopic",
+        let resp = ros.master.execute(method: "requestTopic",
                                          request: params,
                                          host: peerHost,
                                          port: UInt16(peerPort))

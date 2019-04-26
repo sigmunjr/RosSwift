@@ -9,7 +9,7 @@ import Foundation
 import NIOConcurrencyHelpers
 import StdMsgs
 
-final class PeerConnDisconnCallback: CallbackInterface {
+internal final class PeerConnDisconnCallback: CallbackInterface {
 
     var callback: SubscriberStatusCallback
     var subLink: SubscriberLink!

@@ -19,7 +19,7 @@ class SteadyTimerHelper {
     var timer: SteadyTimer? = nil
     var lastCall = SteadyTime(nanosec: 0)
 
-    init(node: Ros.NodeHandle, _ period: Double, oneshot: Bool = false) {
+    init(node: NodeHandle, _ period: Double, oneshot: Bool = false) {
         self.oneshot = oneshot
         let d = WallDuration(seconds: period)
         self.expectedPeriod = d
@@ -110,14 +110,14 @@ class TimerTest: XCTestCase {
             helpers.append(helper)
         }
 
-        let start = WallTime.now()
+        let start = WallTime.now
         let d = WallDuration(milliseconds: 10)
         let spinCount = 1000
         for i in 0..<spinCount {
             ros.spinOnce()
             d.sleep()
         }
-        let end = WallTime.now()
+        let end = WallTime.now
         let dur = (end - start).toSec()
 
         for i in 0..<count {

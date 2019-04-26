@@ -9,10 +9,9 @@ import Foundation
 import StdMsgs
 import RosTime
 
-extension Ros {
 public final class Subscriber {
     let topic: String
-    let node: Ros.NodeHandle
+    let node: NodeHandle
     let helper: SubscriptionCallbackHelper
 
     struct LatchInfo {
@@ -22,7 +21,7 @@ public final class Subscriber {
         let receiptTime: RosTime.Time
     }
 
-    public init(topic: String, node: Ros.NodeHandle, helper: SubscriptionCallbackHelper) {
+    public init(topic: String, node: NodeHandle, helper: SubscriptionCallbackHelper) {
         self.topic = topic
         self.node = node
         self.helper = helper
@@ -40,7 +39,5 @@ public final class Subscriber {
     func getNumPublishers() -> Int {
             return node.ros.topicManager.getNumPublishers(topic: topic)
     }
-
-}
 
 }

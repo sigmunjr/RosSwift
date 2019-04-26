@@ -8,7 +8,7 @@
 import Foundation
 import StdMsgs
 
-protocol ServiceProtocol: class {
+internal protocol ServiceProtocol: class {
     var name: String { get }
     var isDropped: Bool { get }
     var md5sum: String { get }
@@ -22,7 +22,7 @@ protocol ServiceProtocol: class {
 
 }
 
-final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: ServiceProtocol {
+internal final class ServicePublication<MReq: ServiceMessage, MRes: ServiceMessage>: ServiceProtocol {
 
     typealias CallFcn = (MReq) -> MRes?
     var call: CallFcn

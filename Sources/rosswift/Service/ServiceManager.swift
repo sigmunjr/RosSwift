@@ -10,14 +10,14 @@ import NIO
 import NIOConcurrencyHelpers
 import StdMsgs
 
-    final class ServiceManager {
+    internal final class ServiceManager {
 //        static let instance = ServiceManager()
 
         var isShuttingDown = Atomic<Bool>(value: false)
         var servicePublications = SynchronizedArray<ServiceProtocol>()
         var serviceServerLinks = SynchronizedArray<ServiceServerLink>()
 
-        var connectionManager: Ros.ConnectionManager { return ros.connectionManager }
+        var connectionManager: ConnectionManager { return ros.connectionManager }
         var xmlrpcManager: XMLRPCManager { return ros.xmlrpcManager }
         unowned var ros: Ros!
 
@@ -72,10 +72,10 @@ import StdMsgs
                                          callback: ops.callback)
             servicePublications.append(pub)
 
-            let uri = "rosrpc://\(Ros.Network.getHost()):\(connectionManager.getTCPPort())"
+            let uri = "rosrpc://\(ros.network.getHost()):\(connectionManager.getTCPPort())"
             let params = XmlRpcValue(anyArray: [ros.getName(), ops.service, uri, xmlrpcManager.serverURI])
             do {
-                let _ = try Master.shared.execute(method: "registerService", request: params).wait()
+                let _ = try ros.master.execute(method: "registerService", request: params).wait()
             } catch {
                 ROS_ERROR(error.localizedDescription)
             }
@@ -106,9 +106,9 @@ import StdMsgs
             let args = XmlRpcValue(anyArray:
                 [ros.getName(),
                 service,
-                "rosrpc://\(Ros.Network.getHost()):\(connectionManager.getTCPPort())"])
+                "rosrpc://\(ros.network.getHost()):\(connectionManager.getTCPPort())"])
             do {
-                let response = try Master.shared.execute(method: "unregisterService", request: args).wait()
+                let response = try ros.master.execute(method: "unregisterService", request: args).wait()
                 ROS_DEBUG("response: \(response)")
             } catch {
                 ROS_ERROR("error during unregisterService \(error)")
@@ -177,7 +177,7 @@ import StdMsgs
         func lookupService(name: String) -> (host: String, port: UInt16)? {
             let args = XmlRpcValue(anyArray: [ros.getName(), name])
             do {
-                let payload = try Master.shared.execute(method: "lookupService", request: args).wait()
+                let payload = try ros.master.execute(method: "lookupService", request: args).wait()
                 guard payload.valid() else {
                     ROS_DEBUG("lookupService: Invalid server URI returned from master")
                     return nil
@@ -189,7 +189,7 @@ import StdMsgs
                     return nil
                 }
 
-                guard let server = Ros.Network.splitURI(uri: servURI) else {
+                guard let server = Network.splitURI(uri: servURI) else {
                     ROS_DEBUG("lookupService: Bad service uri [\(servURI)]")
                     return nil
                 }

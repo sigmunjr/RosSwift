@@ -28,11 +28,11 @@ extension Ros {
         return name
     }
 
-    /// Returns the namespace of the current node
-
-    public func getNamespace() -> String {
-        return namespace
-    }
+//    /// Returns the namespace of the current node
+//
+//    public func getNamespace() -> String {
+//        return namespace
+//    }
 
 
 //    static let thisNode = ThisNode()

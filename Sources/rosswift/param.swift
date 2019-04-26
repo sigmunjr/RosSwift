@@ -43,7 +43,7 @@ public final class Param {
 
         let params = XmlRpcValue(anyArray: [ros.getName(), mappedKey])
         do {
-            let payload = try Master.shared.execute(method: "deleteParam", request: params).wait()
+            let payload = try ros.master.execute(method: "deleteParam", request: params).wait()
             return payload.valid()
         } catch {
             ROS_ERROR("del(key: String) error: \(error)")
@@ -150,7 +150,7 @@ public final class Param {
     public func getParamNames(keys: inout [String]) -> Bool {
         let params = XmlRpcValue(str: ros.getName())
         do {
-            let parameters = try Master.shared.execute(method: "getParamNames", request: params).wait()
+            let parameters = try ros.master.execute(method: "getParamNames", request: params).wait()
 
             if !parameters.isArray {
                 return false
@@ -192,7 +192,7 @@ public final class Param {
         // don't have that param."
 
         do {
-            let payload = try Master.shared.execute(method: "hasParam", request: params).wait()
+            let payload = try ros.master.execute(method: "hasParam", request: params).wait()
 
             var result = false
             if payload.get(val: &result) {
@@ -355,7 +355,7 @@ public final class Param {
         // don't have that param."
 
         do {
-            let payload = try Master.shared.execute(method: "searchParam", request: params).wait()
+            let payload = try ros.master.execute(method: "searchParam", request: params).wait()
             result = payload.string
         } catch {
             ROS_ERROR("error during searchParam \(error)")
@@ -384,7 +384,7 @@ public final class Param {
         let v = XmlRpcValue(any: value)
         let params = XmlRpcValue(anyArray: [ros.getName(), mappedKey, v])
         do {
-            let parameter = try Master.shared.execute(method: "setParam", request: params).wait()
+            let parameter = try ros.master.execute(method: "setParam", request: params).wait()
             ROS_DEBUG("set<T> response: \(parameter)")
             if gSubscribedParameters.contains(mappedKey) {
                 gParameters[mappedKey] = v
@@ -426,7 +426,7 @@ public final class Param {
                                                             ros.xmlrpcManager.serverURI, mappedKey])
 
                         do {
-                            let result = try Master.shared.execute(method: "subscribeParam", request: params).wait()
+                            let result = try ros.master.execute(method: "subscribeParam", request: params).wait()
                             ROS_DEBUG("cached_parameters: Subscribed to parameter [\(mappedKey)]" +
                                 " with result:\n\(result)")
                         } catch {
@@ -446,7 +446,7 @@ public final class Param {
 
         let params = XmlRpcValue(anyArray: [ros.getName(), mappedKey])
         do {
-            let v = try Master.shared.execute(method: "getParam", request: params).wait()
+            let v = try ros.master.execute(method: "getParam", request: params).wait()
             if v.isArray && v.size() == 1 {
                 value = v[0]
             } else {

@@ -129,7 +129,7 @@ struct XMLRPCClient {
 }
 
     final class Master {
-        public static var shared = Master(group: threadGroup)
+//        public static var shared = Master(group: threadGroup)
 
         var masterHost = "127.0.0.1"
         var masterPort: UInt16 = 11311
@@ -141,7 +141,7 @@ struct XMLRPCClient {
                 var masterUriEnv = ProcessInfo.processInfo.environment["ROS_MASTER_URI"]
                 if masterUriEnv == nil {
                     if amIBeingDebugged() {
-                        masterUriEnv = "http://localhost:11311"
+                        masterUriEnv = "http://\(Network.determineHost()):11311"
                     } else {
                         fatalError( "ROS_MASTER_URI is not defined in the environment. Either " +
                             "type the following or (preferrably) add this to your " +
@@ -156,7 +156,7 @@ struct XMLRPCClient {
             }
 
             // Split URI into
-            guard let master = Ros.Network.splitURI(uri: masterURI!) else {
+            guard let master = Network.splitURI(uri: masterURI!) else {
                 fatalError( "Couldn't parse the master URI [\(masterURI!)] into a host:port pair.")
             }
             masterHost = master.host
@@ -196,7 +196,7 @@ struct XMLRPCClient {
             }
         }
 
-        private init(group: EventLoopGroup) {
+        internal init(group: EventLoopGroup) {
             self.group = group
 //            let handler = XmlRpcHandler()
 //            self.handler = handler

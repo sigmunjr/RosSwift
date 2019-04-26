@@ -64,7 +64,7 @@ class connectionTests: XCTestCase {
             XCTAssertEqual(n1.refCount,1)
             XCTAssert(ros.isStarted)
         }
-        XCTAssertEqual(Ros.refCount, 0)
+        XCTAssertEqual(ros.nodeReferenceCount.load(), 0)
         XCTAssertFalse(ros.isStarted)
         do {
             let n5 = ros.createNode()
@@ -72,7 +72,7 @@ class connectionTests: XCTestCase {
             XCTAssertEqual(n5.refCount,1)
             XCTAssert(n5.gNodeStartedByNodeHandle)
         }
-        XCTAssertEqual(Ros.refCount, 0)
+        XCTAssertEqual(ros.nodeReferenceCount.load(), 0)
         XCTAssertFalse(ros.isStarted)
         ros.shutdown()
     }
@@ -116,7 +116,7 @@ class connectionTests: XCTestCase {
             }
         }
 
-        guard let topics = try? Master.shared.getTopics(callerId: ros.getName()).wait() else {
+        guard let topics = try? ros.master.getTopics(callerId: ros.getName()).wait() else {
             XCTFail()
             return
         }
@@ -223,9 +223,9 @@ class connectionTests: XCTestCase {
 
     func testPublisherMultiple() {
         let ros = Ros(name: "testPublisherMultiple")
-        let n = ros.createNode()
 
         do {
+            let n = ros.createNode()
             let pub1 = n.advertise(topic: "/test", message: std_msgs.float64.self)
             
             do {
@@ -240,10 +240,74 @@ class connectionTests: XCTestCase {
             let t2 = topics2.first(where: { $0 == "/test" })
             XCTAssertNotNil(t2)
        }
+        WallDuration(milliseconds: 100).sleep()
         print("leaving scope")
         let topics3 = ros.getAdvertisedTopics()
+        print(topics3)
         let t3 = topics3.first(where: { $0 == "/test" })
         XCTAssertNil(t3)
+    }
+
+    func testMultipleRos() {
+        let r1 = Ros(name: "testMultipleRos", namespace: "ett")
+        let r2 = Ros(name: "testMultipleRos", namespace: "två")
+
+        let n1 = r1.createNode()
+        let p1 = n1.advertise(topic: "test", message: Int64.self)
+
+        let n2 = r2.createNode()
+
+        var received: Int64 = 0
+
+        let s2 = n2.subscribe(topic: "/ett/test", queueSize: 100) { (msg: Int64) -> Void in
+            received += 1
+        }
+
+        DispatchQueue(label: "r1").async {
+            r2.spin()
+        }
+
+        WallDuration(milliseconds: 100).sleep()
+
+        let start = WallTime.now
+        let sent:Int64 = 100
+        for i in 0..<sent {
+            p1?.publish(message: i)
+        }
+        let end = WallTime.now
+        print("elapsed time = \((end-start).toSec()) ")
+        WallDuration(milliseconds: 1000).sleep()
+
+        XCTAssertEqual(received, sent)
+    }
+
+    func testInternal() {
+        let r = Ros(name: "testInternal")
+        let n = r.createNode()
+        let p = n.advertise(topic: "/testInternal", message: Int64.self)
+
+        var received: Int64 = 0
+
+        let s = n.subscribe(topic: "/testInternal", queueSize: 10) { (msg: Int64) -> Void in
+            received += 1
+        }
+
+        DispatchQueue(label: "r").async {
+            r.spin()
+        }
+
+        WallDuration(milliseconds: 100).sleep()
+
+        let start = WallTime.now
+        let sent:Int64 = 100
+        for i in 0..<sent {
+            p?.publish(message: i)
+        }
+        let end = WallTime.now
+        print("elapsed time = \((end-start).toSec()) ")
+        WallDuration(milliseconds: 100).sleep()
+
+        XCTAssertEqual(received, sent)
     }
 
 

@@ -56,7 +56,7 @@ public struct Time: TimeBase {
     /// this returns the time according to the ROS clock.
     /// Otherwise returns the current wall clock time.
 
-    public static func now() -> Time {
+    public static var now: Time {
         guard Time.gInitialized else {
             fatalError("Cannot use Time.now() before the first NodeHandle has been created or Ros.start()" +
                 " has been called. If this is a standalone app or test that just uses Time and does not" +
@@ -83,10 +83,10 @@ public struct Time: TimeBase {
     /// Wait for time to become valid, with timeout
 
     public static func waitForValid(timeout: WallDuration = WallDuration()) -> Bool {
-        let start = WallTime.now()
+        let start = WallTime.now
         while !isValid() && !gStopped {
             _ = WallDuration(seconds: 0.01).sleep()
-            if timeout > WallDuration(sec: 0, nsec: 0) && WallTime.now() - start > timeout {
+            if timeout > WallDuration(sec: 0, nsec: 0) && WallTime.now - start > timeout {
                 return false
             }
         }
@@ -97,11 +97,11 @@ public struct Time: TimeBase {
     }
 
     public static func + (lhs: Time, rhs: Duration) -> Time {
-        return Time(nanosec: lhs.toNSec() + UInt64(rhs.toNSec()))
+        return Time(nanosec: lhs.nanoseconds + UInt64(rhs.nanoseconds))
     }
 
     public static func - (lhs: Time, rhs: Time) -> Duration {
-        return Duration(nanosec: Int64(lhs.toNSec()) - Int64(rhs.toNSec()))
+        return Duration(nanosec: Int64(lhs.nanoseconds) - Int64(rhs.nanoseconds))
     }
 
 }

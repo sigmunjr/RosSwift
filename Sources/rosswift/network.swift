@@ -8,17 +8,16 @@
 import Foundation
 import NIO
 
-extension Ros {
+    internal struct Network {
+        private let host: String
+        private let gTcprosServerPort: UInt16
 
-    enum Network {
-        static var gHost = ""
-        static var gTcprosServerPort: UInt16 = 0
-
-        static func getHost() -> String {
-            return gHost
+        func getHost() -> String {
+            return host
         }
 
-        static func initialize(remappings: StringStringMap) {
+        init(remappings: StringStringMap) {
+            var gHost = ""
             if let it = remappings["__hostname"] {
                 gHost = it
             } else if let it = remappings["__ip"] {
@@ -29,11 +28,14 @@ extension Ros {
                     fatalError("__tcpros_server_port [\(it)] was not specified as a number within the 0-65535 range")
                 }
                 gTcprosServerPort = tcprosServerPort
+            } else {
+                gTcprosServerPort = 0
             }
 
             if gHost.isEmpty {
-                gHost = determineHost()
+                gHost = Network.determineHost()
             }
+            host = gHost
         }
 
         static func splitURI(uri: String) -> (host: String, port: UInt16)? {
@@ -60,7 +62,7 @@ extension Ros {
             return (parts[0], portNr)
         }
 
-        static func getTCPROSPort() -> UInt16 {
+        func getTCPROSPort() -> UInt16 {
             return gTcprosServerPort
         }
 
@@ -103,4 +105,3 @@ extension Ros {
             return "127.0.0.1"
         }
     }
-}

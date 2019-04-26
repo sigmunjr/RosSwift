@@ -66,14 +66,14 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
                 return false
             }
 
-            return info.nextExpected <= T.now() || info.waitingCallbacks.load() != 0
+            return info.nextExpected <= T.now || info.waitingCallbacks.load() != 0
         }
     }
 
     func add(period: D, callback: @escaping (E) -> Void, callbackQueue: CallbackQueueInterface, trackedObject: AnyObject?, oneshot: Bool) -> TimerHandle {
         let handle = TimerHandle.getNextHandler()
 
-        let now = T.now()
+        let now = T.now
 
         let info = TimerInfo(handle: handle,
                              period: period,
@@ -110,14 +110,14 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
             }
             //            waitingMutex.sync {
             if reset {
-                info.nextExpected = T.now() + period
+                info.nextExpected = T.now + period
 
                 // else if some time has elapsed since last cb (called outside of cb)
-            } else if (T.now() - info.lastReal).nanoseconds < info.period.nanoseconds {
+            } else if (T.now - info.lastReal).nanoseconds < info.period.nanoseconds {
                 // if elapsed time is greater than the new period
                 // do the callback now
-                if (T.now() - info.lastReal).nanoseconds > period.nanoseconds {
-                    info.nextExpected = T.now()
+                if (T.now - info.lastReal).nanoseconds > period.nanoseconds {
+                    info.nextExpected = T.now
                 } else {
                     // else, account for elapsed time by using last_real+period
                     info.nextExpected = info.lastReal + period
@@ -160,7 +160,7 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
                 return
             }
 
-            info.updateNext(currentTime: T.now())
+            info.updateNext(currentTime: T.now)
             waitingMutex.sync {
                 _ = waiting.insert(info.handle)
             }
@@ -171,14 +171,14 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
     }
 
     func threadFunc() {
-        var current = T.now()
-        var sleep_end = T.now()
+        var current = T.now
+        var sleep_end = T.now
         while !quit {
             timersMutex.sync(flags: .barrier) {
                 // detect time jumping backwards
-                if T.now() < current {
+                if T.now < current {
                     ROS_DEBUG("Time jumped backward, resetting time")
-                    current = T.now()
+                    current = T.now
                     for info in timers.values.filter({ $0.lastExpected > current }) {
                         // Timer may have been added after the time jump, so also check if time has jumped past its last call time
                         info.lastExpected = current
@@ -186,7 +186,7 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
                     }
                 }
 
-                current = T.now()
+                current = T.now
                 waitingMutex.sync {
                     sleep_end = current + D(milliseconds: 100)
 
@@ -196,7 +196,7 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
                         })
 
                         for var ti in waitingHandles {
-                            current = T.now()
+                            current = T.now
                             if ti.nextExpected <= current {
                                 let cb = TimerQueueCallback(parent: self, info: &ti, lastExpected: ti.lastExpected, lastReal: ti.lastReal, currentExpected: ti.nextExpected, lastExpired: ti.lastExpired, currentExpired: current)
                                 ti.callbackQueue.addCallback(callback: cb, ownerId: ti.handle.hashValue)
@@ -210,13 +210,13 @@ final class TimerManager<T, D: BasicDurationBase, E: Event> where E.EventTime ==
                 }
             }
             
-            while !newTimer.load() && T.now() < sleep_end && !quit {
+            while !newTimer.load() && T.now < sleep_end && !quit {
                 // detect backwards jump in time
-                if T.now() < current {
+                if T.now < current {
                     ROS_DEBUG("Time jumped backwards, breaking out of sleep")
                     break
                 }
-                current = T.now()
+                current = T.now
                 if current >= sleep_end {
                     break
                 }
@@ -350,11 +350,11 @@ extension TimerManager {
                                       lastReal: lastReal,
                                       currentExpected: currentExpected,
                                       currentExpired: currentExpired,
-                                      currentReal: T.now())
+                                      currentReal: T.now)
 
-            let cbStart = SteadyTime.now()
+            let cbStart = SteadyTime.now
             info.callback(event)
-            let cbEnd = SteadyTime.now()
+            let cbEnd = SteadyTime.now
             info.lastCBDuration = cbEnd - cbStart
             info.lastReal = event.currentReal
             info.lastExpired = event.currentExpired

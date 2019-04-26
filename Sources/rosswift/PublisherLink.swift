@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol PublisherLink: class {
+internal protocol PublisherLink: class {
     var parent: Subscription { get }
     var connectionId: Int { get set }
     var publisherXmlrpcUri: String { get }

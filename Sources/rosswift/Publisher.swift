@@ -18,9 +18,9 @@ public final class SpecializedPublisher<M: Message>: Publisher {
     var datatype: String { return M.datatype }
     let callbacks: SubscriberCallbacks
     private var unadvertised: Bool
-    let topicManager: Ros.TopicManager
+    let topicManager: TopicManager
 
-    init(topicManager: Ros.TopicManager, topic: String, message: M.Type, callbacks: SubscriberCallbacks) {
+    internal init(topicManager: TopicManager, topic: String, message: M.Type, callbacks: SubscriberCallbacks) {
         self.topic = topic
         self.callbacks = callbacks
         self.unadvertised = false

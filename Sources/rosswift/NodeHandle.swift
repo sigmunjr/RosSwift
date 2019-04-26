@@ -10,15 +10,6 @@ import NIOConcurrencyHelpers
 import StdMsgs
 import RosTime
 
-extension Ros {
-
-    private static var nodeReferenceCount = Atomic<UInt>(value: 0)
-
-    // Used in testing
-    static var refCount: UInt {
-        return Ros.nodeReferenceCount.load()
-    }
-
     public final class NodeHandle {
 
         /// Check whether it's time to exit.
@@ -46,18 +37,18 @@ extension Ros {
         private var callbackQueue: CallbackQueueInterface?
 
         public var refCount: UInt {
-            return Ros.refCount
+            return ros.nodeReferenceCount.load()
         }
 
         internal let ros: Ros
 
         // MARK: Life
 
-        internal init(ros: Ros) {
-            self.ros = ros
-            namespace = ros.getNamespace()
-            construct(ns: "")
-        }
+//        internal init(ros: Ros) {
+//            self.ros = ros
+//            namespace = ros.namespace
+//            construct(ns: "")
+//        }
 
 
         /// Constructor.
@@ -72,9 +63,9 @@ extension Ros {
         /// all topics/services/parameters will be prefixed with "/a/b/"
         ///     - remappings:    Remappings for this NodeHandle.
 
-        public init?(ros: Ros, ns: String, remappings: StringStringMap? = nil) {
+        internal init?(ros: Ros, ns: String = "", remappings: StringStringMap? = nil) {
             self.ros = ros
-            namespace = ros.getNamespace()
+            namespace = ros.namespace
             if ns.starts(with: "~") {
                 guard let resolved = ros.resolve(name: ns) else {
                     return nil
@@ -107,7 +98,7 @@ extension Ros {
         /// all topics/services/parameters will be prefixed with "/a/b/"
         ///     - remappings:    Remappings for this NodeHandle.
 
-        public init(parent: NodeHandle, ns: String = "", remappings: StringStringMap? = nil) {
+        internal init(parent: NodeHandle, ns: String = "", remappings: StringStringMap? = nil) {
             self.ros = parent.ros
             self.namespace = parent.namespace
             self.remappings = parent.remappings
@@ -178,7 +169,9 @@ extension Ros {
                                                 trackedObject: options.trackedObject)
 
             if ros.topicManager.advertise(ops: options, callbacks: callbacks) {
-                return SpecializedPublisher(topicManager: ros.topicManager, topic: options.topic, message: M.self, callbacks: callbacks)
+                let pub = SpecializedPublisher(topicManager: ros.topicManager, topic: options.topic, message: M.self, callbacks: callbacks)
+
+                return pub
             }
 
             return nil
@@ -235,7 +228,8 @@ extension Ros {
                 options.callbackQueue = getCallbackQueue()
             }
             if ros.serviceManager.advertiseService(options) {
-                return ServiceServer(service: options.service, node: self)
+                let service = ServiceServer(service: options.service, node: self)
+                return service
             }
             return nil
         }
@@ -581,10 +575,9 @@ extension Ros {
         /// This method will unadvertise every topic and service advertisement,
         /// and unsubscribe every subscription created through this NodeHandle.
         ///
-        /// **NOT IMPLEMENTED**
 
         func shutdown() {
-            // FIXME: not implemented
+            ok = false
         }
 
 
@@ -645,7 +638,7 @@ extension Ros {
         // MARK: private functions
 
         private func destruct() {
-            if Ros.nodeReferenceCount.sub(1) == 1 && gNodeStartedByNodeHandle {
+            if ros.nodeReferenceCount.sub(1) == 1 && gNodeStartedByNodeHandle {
                 ros.shutdown()
             }
         }
@@ -678,16 +671,16 @@ extension Ros {
         }
 
         private func construct(ns: String) {
-            if !ros.isInitialized {
-                fatalError("You must call Ros.initialize() before creating the first NodeHandle")
-            }
+//            if !ros.isInitialized {
+//                fatalError("You must call Ros.initialize() before creating the first NodeHandle")
+//            }
 
             unresolvedNamespace = ns
 
             namespace = resolveName(name: ns, remap: true) ?? ""
             ok = true
 
-            if Ros.nodeReferenceCount.add(1) == 0 && !ros.isStarted {
+            if ros.nodeReferenceCount.add(1) == 0 && !ros.isStarted {
                 gNodeStartedByNodeHandle = true
                 ros.start()
             }
@@ -702,12 +695,11 @@ extension Ros {
             options.topic = topic
 
             if ros.topicManager.subscribeWith(options: options) {
-                return Subscriber(topic: options.topic, node: self, helper: options.helper)
+                let sub = Subscriber(topic: options.topic, node: self, helper: options.helper)
+                return sub
             }
 
             return nil
         }
 
     }
-
-}

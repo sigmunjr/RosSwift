@@ -21,8 +21,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
     return lhs == "*" || rhs == "*" || lhs == rhs
 }
 
-extension Ros {
-    final class TopicManager {
+    internal final class TopicManager {
 
 //        static let instance = TopicManager()
 
@@ -99,6 +98,7 @@ extension Ros {
                         $0.drop()
                     }
                     advertisedTopics.removeAll()
+                    advertisedTopicNames.removeAll()
                 }
 
                 ROS_DEBUG("shutting down subscribers we have \(subscriptions.count) subscriptions")
@@ -147,7 +147,7 @@ extension Ros {
 
                 if protoName == "TCPROS" {
                     let tcprosParams = XmlRpcValue(array: [.init(str: "TCPROS"),
-                                                            .init(str: Network.getHost()),
+                                                            .init(str: ros.network.getHost()),
                                                             .init(any: connectionManager.getTCPPort())])
                     let ret = XmlRpcValue(array: [.init(any: 1),
                                                   .init(str: ""),
@@ -259,7 +259,7 @@ extension Ros {
             ROS_DEBUG("unregister publisher \(topic)")
             let args = XmlRpcValue(anyArray: [ros.getName(), topic, xmlrpcManager.serverURI])
             do {
-                let response = try Master.shared.execute(method: "unregisterPublisher", request: args).wait()
+                let response = try ros.master.execute(method: "unregisterPublisher", request: args).wait()
                 ROS_DEBUG("response = \(response)")
             } catch {
                 ROS_ERROR("Error during unregisterPublisher \(error)")
@@ -396,7 +396,7 @@ extension Ros {
 
             var payload = XmlRpcValue()
             do {
-                payload = try Master.shared.execute(method: "registerSubscriber", request: args).wait()
+                payload = try ros.master.execute(method: "registerSubscriber", request: args).wait()
             } catch {
                 ROS_ERROR("registerSubscriber \(error)")
             }
@@ -456,7 +456,7 @@ extension Ros {
 
         func unregisterSubscriber(topic: String) {
             let args = XmlRpcValue(anyArray: [ros.getName(), topic, xmlrpcManager.serverURI])
-            let response = Master.shared.execute(method: "unregisterSubscriber", request: args)
+            let response = ros.master.execute(method: "unregisterSubscriber", request: args)
             response.whenFailure { error in
                 ROS_ERROR("ouldn't unregister subscriber for topic [\(topic)]: \(error)")
             }
@@ -532,7 +532,7 @@ extension Ros {
                                            .init(str: xmlrpcManager.serverURI)])
             var payload = XmlRpcValue()
             do {
-                payload = try Master.shared.execute(method: "registerPublisher", request: args).wait()
+                payload = try ros.master.execute(method: "registerPublisher", request: args).wait()
             } catch {
                 ROS_ERROR("registerPublisher \(error)")
             }
@@ -638,5 +638,3 @@ extension Ros {
         }
 
     }
-
-}

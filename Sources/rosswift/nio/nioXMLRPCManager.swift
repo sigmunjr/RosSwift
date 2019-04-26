@@ -24,11 +24,11 @@ final class XMLRPCManager {
     var functions = [String: FunctionInfo]()
     var server = XMLRPCServer(group: threadGroup)
     var isUnbindRequested = false
-
+    let host: String
     let functionsQueue = DispatchQueue(label: "functionsQueue")
 
     var serverPort: Int32 { return Int32(server.channel?.localAddress?.port ?? 0) }
-    var serverURI: String { return "http://\(Ros.Network.getHost()):\(serverPort)/" }
+    var serverURI: String { return "http://\(host):\(serverPort)/" }
 
     typealias XLMRPCFunction = (XmlRpcValue) -> XmlRpcValue
     struct FunctionInfo {
@@ -37,12 +37,12 @@ final class XMLRPCManager {
         let wrapper: XMLRPCCallWrapper
     }
 
-    internal init() {
-
+    internal init(host: String) {
+        self.host = host
     }
 
-    func start() {
-        server.bindAndListen(port: 0)
+    func start(host: String) {
+        server.bindAndListen(host: host, port: 0)
     }
 
     func shutdown() {

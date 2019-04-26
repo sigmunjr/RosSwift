@@ -16,7 +16,7 @@ public struct WallTime: TimeBase {
     }
 
 
-    public static func now() -> WallTime {
+    public static var now: WallTime {
         let time = rosWalltime()
         return WallTime(sec: time.sec, nsec: time.nsec)
     }

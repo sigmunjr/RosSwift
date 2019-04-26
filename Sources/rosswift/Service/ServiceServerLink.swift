@@ -10,7 +10,7 @@ import Foundation
 import NIO
 import StdMsgs
 
-final class ServiceServerLink: ChannelInboundHandler {
+internal final class ServiceServerLink: ChannelInboundHandler {
         var channel: Channel?
         let serviceName: String
         let persistent: Bool

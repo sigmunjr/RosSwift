@@ -6,13 +6,14 @@
 //
 
 import Foundation
+import NIOConcurrencyHelpers
 
 public final class ServiceServer {
     let service: String
-    unowned var node: Ros.NodeHandle
-    var isUnadvertised = false
+    unowned var node: NodeHandle
+    var isUnadvertised = Atomic<Bool>(value: false)
 
-    init(service: String, node: Ros.NodeHandle) {
+    internal init(service: String, node: NodeHandle) {
         self.service = service
         self.node = node
     }
@@ -22,14 +23,13 @@ public final class ServiceServer {
     }
 
     func unadvertise() {
-        if !isUnadvertised {
-            isUnadvertised = true
+        if isUnadvertised.compareAndExchange(expected: false, desired: true) {
             _ = node.ros.serviceManager.unadvertiseService(name: service)
         }
     }
 
     func isValid() -> Bool {
-        return !isUnadvertised
+        return !isUnadvertised.load()
     }
 
 

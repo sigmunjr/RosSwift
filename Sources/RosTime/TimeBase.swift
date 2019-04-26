@@ -8,26 +8,19 @@
 import BinaryCoder
 import Foundation
 
-/// Protocol for Time implementations. Provides common functions and
-/// operator overloads.
-
+/// Protocol for Time implementations.
 
 public protocol TimeBase: Comparable, BinaryCodable {
 
     var nanoseconds: UInt64 {get}
-    var sec: UInt32 { get }
-    var nsec: UInt32 { get }
-    init()
-    init(sec: UInt32, nsec: UInt32)
-    init(seconds: TimeInterval)
+
     init(nanosec: UInt64)
-    func isZero() -> Bool
-    func toNSec() -> UInt64
-    func toSec() -> TimeInterval
+
     static func isSystemTime() -> Bool
-    static func now() -> Self
-    static func distantFuture() -> Self
+    static var now: Self { get }
 }
+
+// deafult implementations
 
 public extension TimeBase {
 
@@ -57,10 +50,6 @@ public extension TimeBase {
         return nanoseconds == 0
     }
 
-    func toNSec() -> UInt64 {
-        return nanoseconds
-    }
-
     func toSec() -> TimeInterval {
         return TimeInterval(nanoseconds) * 1e-9
     }
@@ -68,7 +57,6 @@ public extension TimeBase {
     static func isSystemTime() -> Bool {
         return true
     }
-
 
     static func += (lhs: inout Self, rhs: BasicDurationBase) {
         lhs = lhs + rhs
@@ -87,10 +75,10 @@ public extension TimeBase {
     }
 
     static func + (lhs: Self, rhs: BasicDurationBase) -> Self {
-        return Self(nanosec: UInt64(Int64(lhs.toNSec()) + rhs.toNSec()))
+        return Self(nanosec: UInt64(Int64(lhs.nanoseconds) + rhs.nanoseconds))
     }
 
     static func - (lhs: Self, rhs: Self) -> WallDuration {
-        return WallDuration(nanosec: Int64(lhs.toNSec()) - Int64(rhs.toNSec()))
+        return WallDuration(nanosec: Int64(lhs.nanoseconds) - Int64(rhs.nanoseconds))
     }
 }

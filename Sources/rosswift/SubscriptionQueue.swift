@@ -18,7 +18,7 @@ extension NSRecursiveLock {
     }
 }
 
-final class SubscriptionQueue: CallbackInterface {
+internal final class SubscriptionQueue: CallbackInterface {
     struct Item {
         let helper: SubscriptionCallbackHelper
         let deserializer: MessageDeserializer

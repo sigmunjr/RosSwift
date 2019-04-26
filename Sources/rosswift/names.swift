@@ -42,7 +42,7 @@ extension Ros {
 
 
     public func resolve(name: String, remap: Bool = true) -> String? {
-        return resolve(ns: getNamespace(), name: name, remap: remap)
+        return resolve(ns: namespace, name: name, remap: remap)
     }
 
     /// Resolve a graph resource name into a fully qualified graph resource name.
@@ -113,7 +113,7 @@ extension Ros {
         return name
     }
 
-
+}
 
     /// Contains functions which allow you to manipulate ROS names.
 
@@ -253,5 +253,3 @@ extension Ros {
 
 
     }
-
-}
