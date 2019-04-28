@@ -71,7 +71,7 @@ fileprivate final class ThreadLocalStorage {
     }
 }
 
-final class CallbackQueue: CallbackQueueInterface {
+internal final class CallbackQueue: CallbackQueueInterface {
     private var callbacks = Deque<CallbackInfo>()
     private var calling: Int = 0
     private let condition = NSCondition()

@@ -19,7 +19,7 @@ extension NSRecursiveLock {
 }
 
 internal final class SubscriptionQueue: CallbackInterface {
-    struct Item {
+    internal struct Item {
         let helper: SubscriptionCallbackHelper
         let deserializer: MessageDeserializer
         let hasTrackedObject: Bool
@@ -108,7 +108,7 @@ internal final class SubscriptionQueue: CallbackInterface {
         }
 
         if let msg = item.deserializer.deserialize() {
-            item.helper.call(msg: msg)
+            item.helper.call(msg: msg, item: item)
         }
 
         return .success

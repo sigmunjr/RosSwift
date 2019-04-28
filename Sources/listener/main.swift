@@ -20,17 +20,13 @@ struct B {
     }
 }
 
-func natterCallback(msg: geometry_msgs.Accel) {
-    print("I heard: [\(msg)]")
-}
-
 func chatterCallback(msg: String) {
     print("I saw: [\(msg)]")
 }
 
 func chatterCallbackEvent(event: MessageEvent<String>) {
     let msg = event.message
-    print("I got [\(msg) from \(event.connectionHeader["callerid"] ?? "<no caller id>")")
+    print("I got [\(msg) with header \(event.connectionHeader) at time \(event.receiptTime)")
 }
 
 let ros = Ros(argv: &CommandLine.arguments, name: "listener")
@@ -50,11 +46,15 @@ if let respons : TestStringString.Response = try? Service.call(node: n, serviceN
 let a = A(value: 345)
 let b = B(value: 99.345)
 
-let sub = n.subscribe(topic: "/accel", queueSize: 1, callback: natterCallback)
 let vab = n.subscribe(topic: "/chatter", queueSize: 1, callback: chatterCallback)
 let aab = n.subscribe(topic: "/chatter", queueSize: 1, callback: a.chatterCallback)
 let bab = n.subscribe(topic: "/chatter", queueSize: 1, callback: b.chatterCallback)
 let cab = n.subscribe(topic: "/chatter", queueSize: 1, callback: chatterCallbackEvent)
+
+let sub = n.subscribe(topic: "/natter") { (msg: geometry_msgs.Point) -> Void in
+    print("accel: [\(msg)]")
+}
+
 
 n.spinThread()
 

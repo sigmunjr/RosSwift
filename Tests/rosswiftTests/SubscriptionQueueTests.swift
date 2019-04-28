@@ -269,7 +269,7 @@ class FakeSubHelper: SubscriptionCallbackHelper, CustomDebugStringConvertible {
         return FakeMessage()
     }
 
-    func call(msg: Message) {
+    func call(msg: Message, item: SubscriptionQueue.Item) {
         mutex.sync {
             calls += 1
         }

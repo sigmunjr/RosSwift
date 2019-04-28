@@ -239,7 +239,7 @@ public final class Ros: Hashable {
     }
 
 
-    public func createNode(ns: String, remappings: StringStringMap? = nil) -> NodeHandle? {
+    public func createNode(ns: String, remappings: StringStringMap = [:]) -> NodeHandle? {
         return NodeHandle(ros: self, ns: ns, remappings: remappings)
     }
 

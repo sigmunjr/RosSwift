@@ -5,23 +5,30 @@
 //  Created by Thomas Gustafsson on 2018-03-06.
 //
 
-import Foundation
-import StdMsgs
-import RosTime
+
+/// Manages an subscription callback on a specific topic.
+///
+/// A Subscriber should always be created through a call to NodeHandle.subscribe(), or copied from one
+/// that was. Once all copies of a specific
+/// Subscriber go out of scope, the subscription callback associated with that handle will stop
+/// being called.  Once all Subscriber for a given topic go out of scope the topic will be unsubscribed.
+
 
 public final class Subscriber {
-    let topic: String
-    let node: NodeHandle
-    let helper: SubscriptionCallbackHelper
+    public let topic: String
+    public let node: NodeHandle
 
-    struct LatchInfo {
-        let message: SerializedMessage
-        let link: PublisherLink
-        let connectionHeader: StringStringMap
-        let receiptTime: RosTime.Time
+    /// Returns the number of publishers this subscriber is connected to
+
+    public var publisherCount: Int {
+        return node.ros.topicManager.getNumPublishers(topic: topic)
     }
 
-    public init(topic: String, node: NodeHandle, helper: SubscriptionCallbackHelper) {
+    // internal
+
+    internal let helper: SubscriptionCallbackHelper
+
+    internal init(topic: String, node: NodeHandle, helper: SubscriptionCallbackHelper) {
         self.topic = topic
         self.node = node
         self.helper = helper
@@ -32,12 +39,5 @@ public final class Subscriber {
         _ = node.ros.topicManager.unsubscribe(topic: topic, helper: helper)
     }
 
-    func getTopic() -> String {
-        return topic
-    }
-
-    func getNumPublishers() -> Int {
-            return node.ros.topicManager.getNumPublishers(topic: topic)
-    }
 
 }

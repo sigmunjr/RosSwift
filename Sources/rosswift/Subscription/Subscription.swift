@@ -12,7 +12,7 @@ import StdMsgs
 
 protocol TransportUDP {}
 
-final class Subscription {
+internal final class Subscription {
     final class CallBackInfo {
         var callbackQueue: CallbackQueueInterface
         var helper: SubscriptionCallbackHelper
