@@ -257,7 +257,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
 
         func unregisterPublisher(topic: String) -> Bool {
             ROS_DEBUG("unregister publisher \(topic)")
-            let args = XmlRpcValue(anyArray: [ros.getName(), topic, xmlrpcManager.serverURI])
+            let args = XmlRpcValue(anyArray: [ros.name, topic, xmlrpcManager.serverURI])
             do {
                 let response = try ros.master.execute(method: "unregisterPublisher", request: args).wait()
                 ROS_DEBUG("response = \(response)")
@@ -348,7 +348,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
                                 trackedObject: options.trackedObject,
                                 allowConcurrentCallbacks: options.allowConcurrentCallbacks)
 
-                    if !registerSubscriber(callerId: ros.getName(), s: sub, datatype: M.datatype) {
+                    if !registerSubscriber(callerId: ros.name, s: sub, datatype: M.datatype) {
                         ROS_DEBUG("couldn't register subscriber on topic [\(options.topic)")
                         sub.shutdown()
                         ok = false
@@ -392,7 +392,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
         }
 
         func registerSubscriber(callerId: String, s: Subscription, datatype: String) -> Bool {
-            let args = XmlRpcValue(anyArray: [ros.getName(), s.name, datatype, xmlrpcManager.serverURI])
+            let args = XmlRpcValue(anyArray: [ros.name, s.name, datatype, xmlrpcManager.serverURI])
 
             var payload = XmlRpcValue()
             do {
@@ -455,7 +455,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
         }
 
         func unregisterSubscriber(topic: String) {
-            let args = XmlRpcValue(anyArray: [ros.getName(), topic, xmlrpcManager.serverURI])
+            let args = XmlRpcValue(anyArray: [ros.name, topic, xmlrpcManager.serverURI])
             let response = ros.master.execute(method: "unregisterSubscriber", request: args)
             response.whenFailure { error in
                 ROS_ERROR("ouldn't unregister subscriber for topic [\(topic)]: \(error)")
@@ -526,7 +526,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
                 }
             }
 
-            let args = XmlRpcValue(array: [.init(str: ros.getName()),
+            let args = XmlRpcValue(array: [.init(str: ros.name),
                                            .init(str: ops.topic),
                                            .init(str: M.datatype),
                                            .init(str: xmlrpcManager.serverURI)])

@@ -35,7 +35,7 @@ final class IntraProcessPublisherLink: PublisherLink {
         self.publisher = publisher
         let header = Header()
 
-        header.headers = ["callerid": ros.getName(),
+        header.headers = ["callerid": ros.name,
                       "topic": parent.name,
                       "type": publisher.dataType,
                       "md5sum": publisher.md5Sum,

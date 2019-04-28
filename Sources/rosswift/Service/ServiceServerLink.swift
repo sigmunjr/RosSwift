@@ -47,7 +47,7 @@ internal final class ServiceServerLink: ChannelInboundHandler {
             var header = StringStringMap()
             header["service"] = serviceName
             header["md5sum"] = requestMd5sum
-            header["callerid"] = ros.getName()
+            header["callerid"] = ros.name
             header["persistent"] = persistent ? "1" : "0"
             if let extra = extraOutgoingHeaderValues {
                 for item in extra {

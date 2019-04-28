@@ -81,7 +81,7 @@ final class TransportSubscriberLink: SubscriberLink {
         m["type"] = pub.datatype
         m["md5sum"] = pub.md5sum
         m["message_definition"] = pub.messageDefinition
-        m["callerid"] = ros.getName()
+        m["callerid"] = ros.name
         m["latching"] = pub.isLatching() ? "1" : "0"
         m["topic"] = topic
         

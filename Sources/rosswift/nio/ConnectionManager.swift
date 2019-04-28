@@ -166,9 +166,6 @@ internal final class ConnectionManager {
         return connectionIdCounter.add(1)
     }
 
-    func addConnection(connection: ConnectionProtocol) {
-    }
-
     func start(ros: Ros) {
         self.ros = ros
         initialize(group: threadGroup)

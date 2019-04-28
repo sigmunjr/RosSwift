@@ -28,7 +28,7 @@ final class IntraProcessSubscriberLink: SubscriberLink {
     func setSubscriber(ros: Ros, subscriber: IntraProcessPublisherLink) {
         self.subscriber = subscriber
         connectionId = UInt(ros.connectionManager.getNewConnectionID())
-        destinationCallerId = ros.getName()
+        destinationCallerId = ros.name
     }
 
     func isLatching() -> Bool {

@@ -109,7 +109,7 @@ public struct Service {
         }
         
         if let server = ros.serviceManager.lookupService(name: mappedName) {
-            let keymap = ["probe": "1", "md5sum": "*", "callerid": ros.getName(), "service": mappedName]
+            let keymap = ["probe": "1", "md5sum": "*", "callerid": ros.name, "service": mappedName]
             let transport = TransportTCP(pipeline: [ByteToMessageHandler(MessageDelimiterCodec()),
                                                     ByteToMessageHandler(HeaderMessageCodec()),
                                                     TransportTCP.Handler(callback: callback)])

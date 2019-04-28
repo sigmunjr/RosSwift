@@ -51,7 +51,7 @@ final class TransportPublisherLink: PublisherLink {
 
         let header: StringStringMap = ["topic": parent.name,
                                      "md5sum": parent.md5sum,
-                                     "callerid": ros.getName(),
+                                     "callerid": ros.name,
                                      "type": parent.datatype,
                                      "tcp_nodelay": transportHints.getTCPNoDelay() ? "1" : "0"]
 

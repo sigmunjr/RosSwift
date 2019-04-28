@@ -93,11 +93,17 @@ func generateMessage(shell: Shell, msg: String) {
         let parts = line.trimmingCharacters(in: .whitespaces).components(separatedBy: .whitespaces).filter { $0 != "" }
         if parts.count > 1 && !parts[0].hasPrefix("#") {
             let structName = parts[0]
-            let name = parts[1]
-            if parts.count > 2 && parts[2] == "=" {
-                items.append(.init(name: name, type: structName, value: parts[3]))
+            if let eqIndex = parts[1].firstIndex(of: "=") {
+                let name = String(parts[1].prefix(upTo: eqIndex))
+                let val = String(parts[1].suffix(from: eqIndex).dropFirst())
+                items.append(.init(name: name, type: structName, value: val))
             } else {
-                items.append(.init(name: name,type: structName))
+                let name = parts[1]
+                if parts.count > 2 && parts[2] == "=" {
+                    items.append(.init(name: name, type: structName, value: parts[3]))
+                } else {
+                    items.append(.init(name: name,type: structName))
+                }
             }
         }
     }

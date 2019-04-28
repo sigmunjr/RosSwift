@@ -73,7 +73,7 @@ import StdMsgs
             servicePublications.append(pub)
 
             let uri = "rosrpc://\(ros.network.getHost()):\(connectionManager.getTCPPort())"
-            let params = XmlRpcValue(anyArray: [ros.getName(), ops.service, uri, xmlrpcManager.serverURI])
+            let params = XmlRpcValue(anyArray: [ros.name, ops.service, uri, xmlrpcManager.serverURI])
             do {
                 let _ = try ros.master.execute(method: "registerService", request: params).wait()
             } catch {
@@ -104,7 +104,7 @@ import StdMsgs
 
         private func unregisterService(service: String) {
             let args = XmlRpcValue(anyArray:
-                [ros.getName(),
+                [ros.name,
                 service,
                 "rosrpc://\(ros.network.getHost()):\(connectionManager.getTCPPort())"])
             do {
@@ -175,7 +175,7 @@ import StdMsgs
         }
 
         func lookupService(name: String) -> (host: String, port: UInt16)? {
-            let args = XmlRpcValue(anyArray: [ros.getName(), name])
+            let args = XmlRpcValue(anyArray: [ros.name, name])
             do {
                 let payload = try ros.master.execute(method: "lookupService", request: args).wait()
                 guard payload.valid() else {

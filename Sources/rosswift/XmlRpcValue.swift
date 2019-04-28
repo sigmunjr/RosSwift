@@ -585,9 +585,6 @@ extension Dictionary where Value: ConvertableToXml {
     }
 }
 
-
-
-
 extension XmlRpcValue: Collection {
     public func index(after i: Int) -> Int {
         return i + 1

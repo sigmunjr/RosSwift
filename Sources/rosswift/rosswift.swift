@@ -63,9 +63,7 @@ public final class Ros: Hashable {
     var isShuttingDown = Atomic<Bool>(value: false)
     public private(set) var isRunning = false
     var isStarted = false
-//    var isInitialized = false
     let logg = HeliumLogger(.debug)
-//    let thisNode: ThisNode
     public let param: Param
     let serviceManager: ServiceManager
     let topicManager: TopicManager
@@ -169,7 +167,6 @@ public final class Ros: Hashable {
         self.namespace = ns
         self.name = node_name
 
-//        isInitialized = true
         xmlrpcManager = XMLRPCManager(host: network.getHost())
 
         serviceManager = ServiceManager()
@@ -297,7 +294,6 @@ public final class Ros: Hashable {
         while isRunning {
             _ = WallDuration(seconds: 0.05).sleep()
         }
-//        promise.succeed(())
     }
 
     private func kill() {
@@ -309,10 +305,11 @@ public final class Ros: Hashable {
     }
 
     internal func start() {
-        ROS_INFO("starting Ros")
         if isStarted {
             return
         }
+
+        ROS_INFO("starting Ros")
 
         isShutdownRequested = false
         isStarted = true
@@ -320,9 +317,7 @@ public final class Ros: Hashable {
 
         _ = param.param(name: "/tcp_keepalive", value: &useKeepAlive, defaultValue: useKeepAlive)
 
-        guard xmlrpcManager.bind(function: "shutdown", cb: shutdownCallback) else {
-            fatalError("Could not bind function")
-        }
+        xmlrpcManager.bind(function: "shutdown", cb: shutdownCallback)
 
         initInternalTimerManager()
 
@@ -346,7 +341,7 @@ public final class Ros: Hashable {
 
         let logServiceName = resolve(name: "~set_logger_level")!
         _ = serviceManager.advertiseService(.init(service: logServiceName,
-                                                           callback: setLoggerLevel))
+                                                  callback: setLoggerLevel))
 
         if isShuttingDown.load() {
             return

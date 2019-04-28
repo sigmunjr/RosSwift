@@ -16,15 +16,11 @@ enum DropReason {
     case destructing
 }
 
-protocol ConnectionProtocol {
-
-}
-
 typealias ReadFinishedFunc = (Connection, [UInt8], Int, Bool) -> Void
 typealias WriteFinishedFunc = (Connection) -> Void
 typealias DropFunc = (Notification) -> Void
 
-final class Connection: ConnectionProtocol {
+final class Connection {
 
     var channel: Channel
     var header: Header

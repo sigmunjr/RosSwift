@@ -9,8 +9,6 @@ import Foundation
 
 typealias ParameterStorage = [String: XmlRpcValue]
 
-extension Ros {
-
 public final class Param {
 
     let parameterQueue = DispatchQueue(label: "parameterQueue")
@@ -41,7 +39,7 @@ public final class Param {
             gParameters.removeValue(forKey: mappedKey)
         }
 
-        let params = XmlRpcValue(anyArray: [ros.getName(), mappedKey])
+        let params = XmlRpcValue(anyArray: [ros.name, mappedKey])
         do {
             let payload = try ros.master.execute(method: "deleteParam", request: params).wait()
             return payload.valid()
@@ -148,7 +146,7 @@ public final class Param {
     /// - Returns: false if the process fails
 
     public func getParamNames(keys: inout [String]) -> Bool {
-        let params = XmlRpcValue(str: ros.getName())
+        let params = XmlRpcValue(str: ros.name)
         do {
             let parameters = try ros.master.execute(method: "getParamNames", request: params).wait()
 
@@ -185,7 +183,7 @@ public final class Param {
             return false
         }
 
-        let params = XmlRpcValue(anyArray: [ros.getName(), resolved])
+        let params = XmlRpcValue(anyArray: [ros.name, resolved])
 
         // We don't loop here, because validateXmlrpcResponse() returns false
         // both when we can't contact the master and when the master says, "I
@@ -319,7 +317,7 @@ public final class Param {
 
 
     public func search(key: String, result: inout String) -> Bool {
-        return search(ns: ros.getName(), key: key, result: &result)
+        return search(ns: ros.name, key: key, result: &result)
     }
 
 
@@ -382,7 +380,7 @@ public final class Param {
         }
 
         let v = XmlRpcValue(any: value)
-        let params = XmlRpcValue(anyArray: [ros.getName(), mappedKey, v])
+        let params = XmlRpcValue(anyArray: [ros.name, mappedKey, v])
         do {
             let parameter = try ros.master.execute(method: "setParam", request: params).wait()
             ROS_DEBUG("set<T> response: \(parameter)")
@@ -422,7 +420,7 @@ public final class Param {
                     }
                 } else {
                     if gSubscribedParameters.insert(mappedKey).inserted {
-                        let params = XmlRpcValue(anyArray: [ros.getName(),
+                        let params = XmlRpcValue(anyArray: [ros.name,
                                                             ros.xmlrpcManager.serverURI, mappedKey])
 
                         do {
@@ -444,7 +442,7 @@ public final class Param {
             return value
         }
 
-        let params = XmlRpcValue(anyArray: [ros.getName(), mappedKey])
+        let params = XmlRpcValue(anyArray: [ros.name, mappedKey])
         do {
             let v = try ros.master.execute(method: "getParam", request: params).wait()
             if v.isArray && v.size() == 1 {
@@ -482,4 +480,3 @@ public final class Param {
 
 }
 
-}

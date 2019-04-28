@@ -70,7 +70,7 @@ internal final class ServiceClientLink {
                             "response_type": servicePublication.responseDataType,
                             "type": servicePublication.dataType,
                             "md5sum": servicePublication.md5sum,
-                            "callerid": ros.getName()]
+                            "callerid": ros.name]
 
         connection?.writeHeader(keyVals: m).map {
             ROS_DEBUG("data written")

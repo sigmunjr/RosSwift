@@ -16,7 +16,7 @@ enum ConnectionError: Error {
     case connectionDropped
 }
 
-final class InboundConnection: ConnectionProtocol {
+final class InboundConnection {
 
     var channel: Channel?
     var dropped = Atomic<Bool>(value: false)

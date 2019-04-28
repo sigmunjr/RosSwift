@@ -36,11 +36,11 @@ extension rosgraph_msgs {
 		"""
 	public static var hasHeader = false
 
-	public var DEBUG=1: Int8
-	public var INFO=2: Int8
-	public var WARN=4: Int8
-	public var ERROR=8: Int8
-	public var FATAL=16: Int8
+	public let DEBUG: Int8 = 1
+	public let INFO: Int8 = 2
+	public let WARN: Int8 = 4
+	public let ERROR: Int8 = 8
+	public let FATAL: Int8 = 16
 	public var header: std_msgs.header
 	public var level: Int8
 	public var name: String
@@ -50,12 +50,7 @@ extension rosgraph_msgs {
 	public var line: UInt32
 	public var topics: [String]
 
-	public init(DEBUG=1: Int8, INFO=2: Int8, WARN=4: Int8, ERROR=8: Int8, FATAL=16: Int8, header: std_msgs.header, level: Int8, name: String, msg: String, file: String, function: String, line: UInt32, topics: [String]) {
-		self.DEBUG=1 = DEBUG=1
-		self.INFO=2 = INFO=2
-		self.WARN=4 = WARN=4
-		self.ERROR=8 = ERROR=8
-		self.FATAL=16 = FATAL=16
+	public init(header: std_msgs.header, level: Int8, name: String, msg: String, file: String, function: String, line: UInt32, topics: [String]) {
 		self.header = header
 		self.level = level
 		self.name = name
@@ -67,11 +62,6 @@ extension rosgraph_msgs {
 	}
 
 	public init() {
-		DEBUG=1 = Int8()
-		INFO=2 = Int8()
-		WARN=4 = Int8()
-		ERROR=8 = Int8()
-		FATAL=16 = Int8()
 		header = std_msgs.header()
 		level = Int8()
 		name = String()
