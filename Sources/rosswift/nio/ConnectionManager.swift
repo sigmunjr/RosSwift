@@ -11,8 +11,6 @@ import NIO
 import NIOConcurrencyHelpers
 import StdMsgs
 
-struct Nio {}
-
 final class ConnectionHandler: ChannelInboundHandler {
     typealias InboundIn = ByteBuffer
     typealias InboundOut = ByteBuffer
@@ -141,7 +139,6 @@ final class ConnectionHandler: ChannelInboundHandler {
 }
 
 internal final class ConnectionManager {
-//    static var instance = ConnectionManager()
     var channel: Channel?
     var boot: ServerBootstrap?
     unowned var ros: Ros!
@@ -194,7 +191,7 @@ internal final class ConnectionManager {
 
             // Set the handlers that are appled to the accepted Channels
             .childChannelInitializer {
-                $0.pipeline.addHandlers([ByteToMessageHandler(Nio.MessageDelimiterCodec()),
+                $0.pipeline.addHandlers([ByteToMessageHandler(MessageDelimiterCodec()),
                                          ConnectionHandler(ros: self.ros)])
             }
 

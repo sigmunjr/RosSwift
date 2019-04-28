@@ -135,12 +135,12 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
             ROS_DEBUG("requestTopic \(topic) with \(protos)")
             for protoIndex in 0..<protos.size() {
                 let proto = protos[protoIndex]
-                guard case .array = proto.value else {
+                guard case .array = proto else {
                     ROS_DEBUG("requestTopic protocol list was not a list of lists")
                     return XmlRpcValue()
                 }
 
-                guard case .string(let protoName) = proto[0].value else {
+                guard case .string(let protoName) = proto[0] else {
                     ROS_DEBUG( "requestTopic received a protocol list in which a sublist did not start with a string")
                     return XmlRpcValue()
                 }
@@ -407,7 +407,7 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
 
             var pubUris = [String]()
             for i in 0..<payload.size() {
-                if case .string(let uri) = payload[i].value {
+                if case .string(let uri) = payload[i] {
                     if uri != xmlrpcManager.serverURI {
                         if !uri.isEmpty {
                             pubUris.append(uri)

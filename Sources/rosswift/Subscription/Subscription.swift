@@ -287,8 +287,8 @@ internal final class Subscription {
 
         resp.whenSuccess({ payload in
             guard payload.size() == 3,
-                case .string(let pubHost) = payload[1].value,
-                case .int(let pubPort) = payload[2].value else {
+                case .string(let pubHost) = payload[1],
+                case .int(let pubPort) = payload[2] else {
                     ROS_DEBUG("publisher implements TCPROS, but the parameters aren't string,int")
                     return
             }

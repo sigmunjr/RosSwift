@@ -13,7 +13,7 @@ private let standardDataString = "abcde"
 
 class DecoderTest: XCTestCase {
     private var channel: EmbeddedChannel!
-    private var decoderUnderTest: ByteToMessageHandler<Nio.MessageDelimiterCodec>!
+    private var decoderUnderTest: ByteToMessageHandler<MessageDelimiterCodec>!
 
 
     override func setUp() {
@@ -25,7 +25,7 @@ class DecoderTest: XCTestCase {
     }
 
     func testHeaderWithData() {
-        self.decoderUnderTest = .init(Nio.MessageDelimiterCodec())
+        self.decoderUnderTest = .init(MessageDelimiterCodec())
         XCTAssertNoThrow(try self.channel.pipeline.addHandler(self.decoderUnderTest).wait())
 
         let dataLength: UInt32 = 5
@@ -47,7 +47,7 @@ class DecoderTest: XCTestCase {
 
     func testDecodeTwoFrames() throws {
 
-        self.decoderUnderTest = .init(Nio.MessageDelimiterCodec())
+        self.decoderUnderTest = .init(MessageDelimiterCodec())
         XCTAssertNoThrow(try self.channel.pipeline.addHandler(self.decoderUnderTest).wait())
 
         let firstFrameDataLength: UInt32 = 5
@@ -76,7 +76,7 @@ class DecoderTest: XCTestCase {
 
     func testDecodeSplitIncomingData() throws {
 
-        self.decoderUnderTest = .init(Nio.MessageDelimiterCodec())
+        self.decoderUnderTest = .init(MessageDelimiterCodec())
         XCTAssertNoThrow(try self.channel.pipeline.addHandler(self.decoderUnderTest).wait())
 
         let frameDataLength: UInt32 = 5
@@ -128,7 +128,7 @@ class DecoderTest: XCTestCase {
 
     func testEmptyBuffer() throws {
 
-        self.decoderUnderTest = .init(Nio.MessageDelimiterCodec())
+        self.decoderUnderTest = .init(MessageDelimiterCodec())
         XCTAssertNoThrow(try self.channel.pipeline.addHandler(self.decoderUnderTest).wait())
 
         let buffer = self.channel.allocator.buffer(capacity: 1)

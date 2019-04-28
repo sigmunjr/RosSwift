@@ -90,7 +90,7 @@ public final class Param {
 
     public func get(_ key: String, _ value: inout Int) -> Bool {
         if let v = getImpl(key: key, useCache: false) {
-            switch v.value {
+            switch v {
             case .int(let i):
                 value = i
                 return true
@@ -454,7 +454,7 @@ public final class Param {
             }
             if useCache {
                 parameterQueue.sync {
-                    ROS_DEBUG("cached_parameters: Caching parameter [\(mappedKey)] with value type [\(String(describing: value?.getType()))]")
+                    ROS_DEBUG("cached_parameters: Caching parameter [\(mappedKey)] with value type [\(String(describing: value))]")
                     gParameters[mappedKey] = value
                 }
             }

@@ -142,7 +142,7 @@ class paramTests: XCTestCase {
         XCTAssertEqual( 42, param )
         var v = XmlRpcValue()
         XCTAssert(ros.param.get("test_set_param", &v))
-        guard case .int = v.value else {
+        guard case .int = v else {
             XCTFail()
             return
         }

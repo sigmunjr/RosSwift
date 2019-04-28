@@ -139,7 +139,7 @@ final class HTTPHandler: ChannelInboundHandler {
         let methodName = XmlRpcUtil.parseTag(from: .methodname, to: .endMethodname, xml: &xmlSeq)
         if !methodName.isEmpty && XmlRpcUtil.findTag(tag: .params, xml: &xmlSeq) {
             while XmlRpcUtil.nextTagIs(tag: .param, xml: &xmlSeq) {
-                let v = XmlRpcValue()
+                var v = XmlRpcValue()
                 let _ = v.fromXML(xml: &xmlSeq)
                 params.append(v)
                 _ = XmlRpcUtil.nextTagIs(tag: .endParam, xml: &xmlSeq)
@@ -209,13 +209,11 @@ final class HTTPHandler: ChannelInboundHandler {
 }
 
 final class XMLRPCServer {
-//    let handler: MessageHandler
     var channel: Channel?
     var boot: ServerBootstrap?
     var methods = [String: XmlRpcServerMethod]()
 
     init(group: EventLoopGroup) {
-//        handler = MessageHandler()
 
         self.boot = ServerBootstrap(group: group)
             // Specify backlog and enable SO_REUSEADDR for the server itself
@@ -234,8 +232,6 @@ final class XMLRPCServer {
             .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 1)
             .childChannelOption(ChannelOptions.allowRemoteHalfClosure, value: true)
-
-//        handler.server = self
 
     }
 

@@ -145,7 +145,7 @@ import StdMsgs
                 return nil
             }
 
-            let trans = Nio.TransportTCP(pipeline: [])
+            let trans = TransportTCP(pipeline: [])
 
             let c = trans.connect(host: server.host, port: Int(server.port)).map { channel -> ServiceServerLink in
                 let client = ServiceServerLink(ros: self.ros,

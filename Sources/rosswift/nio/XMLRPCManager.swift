@@ -19,8 +19,6 @@ struct XmlRpc {
 
 final class XMLRPCManager {
 
-//    static let instance = XMLRPCManager()
-
     var functions = [String: FunctionInfo]()
     var server = XMLRPCServer(group: threadGroup)
     var isUnbindRequested = false
@@ -86,7 +84,7 @@ final class XMLRPCManager {
         let methodName = XmlRpcUtil.parseTag(from: .methodname, to: .endMethodname, xml: &xmlSeq)
         if !methodName.isEmpty && XmlRpcUtil.findTag(tag: .params, xml: &xmlSeq) {
             while XmlRpcUtil.nextTagIs(tag: .param, xml: &xmlSeq) {
-                let v = XmlRpcValue()
+                var v = XmlRpcValue()
                 let _ = v.fromXML(xml: &xmlSeq)
                 params.append(v)
                 _ = XmlRpcUtil.nextTagIs(tag: .endParam, xml: &xmlSeq)

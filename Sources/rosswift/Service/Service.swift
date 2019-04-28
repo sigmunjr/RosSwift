@@ -110,9 +110,9 @@ public struct Service {
         
         if let server = ros.serviceManager.lookupService(name: mappedName) {
             let keymap = ["probe": "1", "md5sum": "*", "callerid": ros.getName(), "service": mappedName]
-            let transport = Nio.TransportTCP(pipeline: [ByteToMessageHandler(Nio.MessageDelimiterCodec()),
-                                                        ByteToMessageHandler(Nio.HeaderMessageCodec()),
-                                                        Nio.TransportTCP.Handler(callback: callback)])
+            let transport = TransportTCP(pipeline: [ByteToMessageHandler(MessageDelimiterCodec()),
+                                                    ByteToMessageHandler(HeaderMessageCodec()),
+                                                    TransportTCP.Handler(callback: callback)])
             do {
 
             try transport.connect(host: server.host, port: Int(server.port)).map { channel -> Void in

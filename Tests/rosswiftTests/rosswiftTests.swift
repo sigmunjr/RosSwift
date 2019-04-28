@@ -62,10 +62,10 @@ class rosswiftTests: XCTestCase {
     func testXmlStruct() {
         let r = "<value><struct><member><name>adam</name><value><dateTime.iso8601>19831212T14:13:12</dateTime.iso8601></value></member><member><name>bertil</name><value><i4>2345</i4></value></member></struct></value>"
         var seq = r.dropFirst(0)
-        let v = XmlRpcValue()
+        var v = XmlRpcValue()
         let res = v.fromXML(xml: &seq)
         XCTAssert(res)
-        if let s = v.`struct` {
+        if let s = v.dictionary {
             XCTAssertEqual(s["bertil"]!.int!,2345)
             XCTAssertEqual(s["adam"]!.date!.description,"1983-12-12 14:13:12 +0000")
         } else {

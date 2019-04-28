@@ -9,12 +9,6 @@ import StdMsgs
 
 public typealias StringStringMap = [String: String]
 
-struct TransportTCP {
-    static var useKeepalive = false
-    static var useIPv6 = false
-}
-
-
 func amIBeingDebugged() -> Bool {
     #if os(OSX)
     var info = kinfo_proc()
@@ -83,11 +77,21 @@ public final class Ros: Hashable {
     let name: String
     let namespace: String
 
+    // has currently no function
+    var useKeepAlive: Bool = true
+
     internal var nodeReferenceCount = Atomic<UInt>(value: 0)
     internal var globalRemappings = StringStringMap()
     internal var globalUnresolvedRemappings = StringStringMap()
 
     public var ok: Bool { return isRunning }
+
+    /// Alternate ROS initialization function.
+    ///
+    /// - Parameter remappings: A map<string, string> where each one constitutes
+    /// a name remapping, or one of the special remappings like __name, __master, __ns, etc.
+    /// - Parameter name: Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
+    /// - Parameter options: [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
 
     public init(name inName: String, namespace: String = "", remappings: StringStringMap = [:], options: InitOption = []) {
         initOptions = options
@@ -198,6 +202,21 @@ public final class Ros: Hashable {
 
     }
 
+    ///  ROS initialization function.
+    ///
+    /// This function will parse any ROS arguments (e.g., topic name
+    /// remappings), and will consume them (i.e., argc and argv may be
+    /// modified as a result of this call).
+    ///
+    /// Use this version if you are using the NodeHandle API
+    ///
+    /// - Parameter argv: Command line argumets
+    /// - Parameter name: Name of this node.  The name must be a base name, ie.
+    ///             it cannot contain namespaces.
+    /// - Parameter options: [optional] Options to start the node with
+    /// (a set of bit flags from `Ros.InitOption`)
+
+
     public convenience init(argv: inout [String], name: String, options: InitOption = []) {
 
 
@@ -219,15 +238,6 @@ public final class Ros: Hashable {
 
 
     }
-
-
-
-//    public init() {
-//        if !Ros.atexitRegistered {
-//            Ros.atexitRegistered = true
-//            atexit(atexitCallback)
-//        }
-//    }
 
     deinit {
         shutdown()
@@ -258,7 +268,7 @@ public final class Ros: Hashable {
 
     func shutdownCallback(params: XmlRpcValue) -> XmlRpcValue {
         var count = 0
-        switch params.getType() {
+        switch params {
         case  .array(let a):
             count = a.count
         default:
@@ -277,87 +287,6 @@ public final class Ros: Hashable {
         return XmlRpc.responseInt(code: 1, msg: "", response: 0)
     }
 
-    ///  ROS initialization function.
-    ///
-    /// This function will parse any ROS arguments (e.g., topic name
-    /// remappings), and will consume them (i.e., argc and argv may be
-    /// modified as a result of this call).
-    ///
-    /// Use this version if you are using the NodeHandle API
-    ///
-    /// - Parameter argv: Command line argumets
-    /// - Parameter name: Name of this node.  The name must be a base name, ie.
-    ///             it cannot contain namespaces.
-    /// - Parameter options: [optional] Options to start the node with
-    /// (a set of bit flags from `Ros.InitOption`)
-    /// - Returns: a future that will succeed at shutdown
-
-//    public func initialize(argv: inout [String],
-//                                  name: String,
-//                                  options: InitOption = .init()) -> EventLoopFuture<Void> {
-//
-//        Log.logger = logg
-//        #if os(Linux)
-//        logg.colored = true
-//        logg.details = true
-//        #else
-//        logg.colored = !amIBeingDebugged()
-//        logg.details = amIBeingDebugged()
-//        #endif
-//        logg.dateFormat = "HH:mm:ss.SSS"
-//        ROS_INFO("Ros is initializing")
-//
-//        var remappings = StringStringMap()
-//        var unhandled = [String]()
-//
-//        for arg in argv {
-//            if let pos = arg.range(of: ":=") {
-//                let local = String(arg.prefix(upTo: pos.lowerBound))
-//                let external = String(arg.suffix(from: pos.upperBound))
-//                ROS_DEBUG("remap \(local) => \(external)")
-//                remappings[local] = external
-//            } else {
-//                unhandled.append(arg)
-//            }
-//        }
-//        argv = unhandled
-//        return initialize(remappings: remappings, name: name, options: options)
-//    }
-//
-//    private let promise: EventLoopPromise<Void> = threadGroup.next().makePromise()
-
-    /// Alternate ROS initialization function.
-    ///
-    /// - Parameter remappings: A map<string, string> where each one constitutes
-    /// a name remapping, or one of the special remappings like __name, __master, __ns, etc.
-    /// - Parameter name: Name of this node.  The name must be a base name, ie. it cannot contain namespaces.
-    /// - Parameter options: [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
-    /// - Returns: a future that will succeed at shutdown
-
-
-//    public func initialize(remappings: StringStringMap,
-//                                  name: String,
-//                                  options: InitOption) -> EventLoopFuture<Void> {
-//
-//        if !Ros.atexitRegistered {
-//            Ros.atexitRegistered = true
-//            atexit(atexitCallback)
-//        }
-//
-//        initOptions = options
-//        isRunning = true
-//
-//        check_ipv6_environment()
-//        Network.initialize(remappings: remappings)
-//        ros.master.initialize(remappings: remappings)
-//        ThisNode.initialize(name: name, remappings: remappings, options: options)
-//        fileLog = FileLog(remappings: remappings)
-//        Param.initialize(remappings: remappings)
-//
-//        isInitialized = true
-//
-//        return promise.futureResult
-//    }
 
 
     func removeROSArgs(argv: [String]) -> [String] {
@@ -389,7 +318,7 @@ public final class Ros: Hashable {
         isStarted = true
         isRunning = true
 
-        _ = param.param(name: "/tcp_keepalive", value: &TransportTCP.useKeepalive, defaultValue: TransportTCP.useKeepalive)
+        _ = param.param(name: "/tcp_keepalive", value: &useKeepAlive, defaultValue: useKeepAlive)
 
         guard xmlrpcManager.bind(function: "shutdown", cb: shutdownCallback) else {
             fatalError("Could not bind function")
