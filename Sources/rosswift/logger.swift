@@ -129,6 +129,6 @@ func setLoggerLevel(x: SetLoggerLevelRequest) -> SetLoggerLevelResponse? {
         return nil
     }
 
-    Ros.Console.setLoggerLevel(logger: x.logger, level: level)
+    Console.setLoggerLevel(logger: x.logger, level: level)
     return SetLoggerLevelResponse()
 }

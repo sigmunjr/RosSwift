@@ -53,7 +53,7 @@ public struct Service {
     ///   - timeout: The amount of time to wait for, in milliseconds.  If timeout is -1, waits until the node is shutdown
     /// - Returns: true on success, false otherwise
     static func waitForService(ros: Ros, serviceName: String, timeout: Int32) -> Bool {
-        let dur = RosTime.Duration(milliseconds: timeout)
+        let dur = Duration(milliseconds: timeout)
         return waitForService(ros: ros, serviceName: serviceName, timeout: dur )
     }
 

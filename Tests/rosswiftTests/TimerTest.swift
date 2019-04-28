@@ -88,7 +88,7 @@ class TimerTest: XCTestCase {
 
         let helper = SteadyTimerHelper(node: n, 0.01)
         let d = WallDuration(milliseconds: 1)
-        for i in 0..<1000 {
+        for _ in 0..<1000 {
             ros.spinOnce()
             d.sleep()
         }
@@ -113,7 +113,7 @@ class TimerTest: XCTestCase {
         let start = WallTime.now
         let d = WallDuration(milliseconds: 10)
         let spinCount = 1000
-        for i in 0..<spinCount {
+        for _ in 0..<spinCount {
             ros.spinOnce()
             d.sleep()
         }

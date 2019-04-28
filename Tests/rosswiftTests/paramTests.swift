@@ -447,7 +447,7 @@ class paramTests: XCTestCase {
     {
         let param_name = "map_double_param"
 
-        map_d = ["a":0.0,"b":-0.123456789,"c":123456789]
+        map_d = ["a":0.0,"b":-0.123456789,"c":12345678]
 
         ros.param.set(key: param_name, value: map_d)
 
@@ -457,8 +457,8 @@ class paramTests: XCTestCase {
         XCTAssert(ros.param.get(param_name, &map_b))
         XCTAssert(ros.param.get(param_name, &map_d2))
 
-        XCTAssertEqual(map_f, ["a":0.0,"b":-0.123456789,"c":123456789])
-        XCTAssertEqual(map_i, ["a":0,"b":0,"c":123456789])
+        XCTAssertEqual(map_f, ["a":0.0,"b":-0.123456789,"c":12345678])
+        XCTAssertEqual(map_i, ["a":0,"b":0,"c":12345678])
         XCTAssertEqual(map_b, ["a":false,"b":true,"c":true])
 
         XCTAssertEqual(map_d.count, map_d2.count)

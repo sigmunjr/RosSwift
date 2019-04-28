@@ -23,8 +23,8 @@ final class TransportPublisherLink: PublisherLink {
     private var connection: InboundConnection?
     private var retryTimerHandle: TimerHandle
     private var needsRetry: Bool
-    private var retryPeriod = RosTime.WallDuration()
-    private var nextRetry = RosTime.SteadyTime()
+    private var retryPeriod = WallDuration()
+    private var nextRetry = SteadyTime()
     private var isDropping: Bool
 
     init(parent: Subscription, xmlrpcUri: String, transportHints: TransportHints) {

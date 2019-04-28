@@ -28,11 +28,11 @@ class serviceTests: XCTestCase {
     override func tearDown() {
     }
 
-    func srvCallback(req: TestStringString.Request) -> TestStringString.Response? {
-        return TestStringString.Response("A")
-    }
-
     func testCallService() {
+        func srvCallback(req: TestStringString.Request) -> TestStringString.Response? {
+            return TestStringString.Response("A")
+        }
+
         let ros = Ros(name: "testCallService")
         let node = ros.createNode()
         guard let serv = node.advertise(service: "service_adv", srvFunc: srvCallback) else {
@@ -166,6 +166,14 @@ class serviceTests: XCTestCase {
 
 
     func testCallSrvMultipleTimes() {
+
+        var count = 0
+        func srvCallback(req: TestStringString.Request) -> TestStringString.Response? {
+            count += 1
+            return TestStringString.Response("A\(count)")
+        }
+
+
         let ros = Ros(name: "testCallSrvMultipleTimes")
         let node = ros.createNode()
         let serv = node.advertise(service: "/service_adv2", srvFunc: srvCallback)
@@ -174,11 +182,11 @@ class serviceTests: XCTestCase {
         var res = TestStringString.Response()
         req.data = "case_FLIP"
 
-//        self.measure {
-            for _ in 0..<10 {
-                XCTAssert(Service.call(node: node, serviceName: "service_adv2", req: req, response: &res))
-            }
-//        }
+        for i in 0..<100 {
+            XCTAssert(Service.call(node: node, serviceName: "service_adv2", req: req, response: &res))
+            XCTAssertEqual(res.data, "A\(i+1)")
+        }
+        XCTAssertEqual(count, 100)
     }
 
 

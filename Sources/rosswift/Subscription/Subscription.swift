@@ -37,7 +37,7 @@ internal final class Subscription {
         let message: SerializedMessage
         unowned var link: PublisherLink
         let connectionHeader: [String: String]
-        let receiptTime: RosTime.Time
+        let receiptTime: Time
     }
 
     let datatype: String

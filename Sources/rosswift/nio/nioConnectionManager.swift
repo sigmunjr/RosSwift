@@ -17,7 +17,7 @@ final class ConnectionHandler: ChannelInboundHandler {
     typealias InboundIn = ByteBuffer
     typealias InboundOut = ByteBuffer
 
-    private var subscriber: Ros.TransportSubscriberLink?
+    private var subscriber: TransportSubscriberLink?
     private var serviceclient: ServiceClientLink?
 
     private let ros: Ros
@@ -87,9 +87,9 @@ final class ConnectionHandler: ChannelInboundHandler {
             // Connection Header Received
 
             if let topic = readMap["topic"], let remote = context.remoteAddress {
-                let conn = Nio.Connection(transport: context.channel, header: header)
+                let conn = Connection(transport: context.channel, header: header)
                 ROS_DEBUG("Connection: Creating TransportSubscriberLink for topic [\(topic)] connected to [\(remote)]")
-                let subLink = Ros.TransportSubscriberLink(connection: conn, topicManager: ros.topicManager)
+                let subLink = TransportSubscriberLink(connection: conn, topicManager: ros.topicManager)
                 if subLink.handleHeader(ros: ros, header: header) {
                     subscriber = subLink
                 } else {
@@ -97,7 +97,7 @@ final class ConnectionHandler: ChannelInboundHandler {
                 }
             } else if let val = header.getValue(key: "service") {
                 ROS_DEBUG("Connection: Creating ServiceClientLink for service [\(val)] connected to [\(String(describing: context.remoteAddress!.description))]")
-                let conn = Nio.Connection(transport: context.channel, header: header)
+                let conn = Connection(transport: context.channel, header: header)
 
                 let link = ServiceClientLink()
                 link.initialize(connection: conn)

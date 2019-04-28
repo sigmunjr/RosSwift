@@ -8,7 +8,7 @@
 import Foundation
 
 internal final class ServiceClientLink {
-    var connection: Nio.Connection?
+    var connection: Connection?
     var parent: ServiceProtocol?
     var persistent = false
 
@@ -18,7 +18,7 @@ internal final class ServiceClientLink {
         parent?.removeServiceClientLink(self)
     }
 
-    func initialize(connection: Nio.Connection) {
+    func initialize(connection: Connection) {
         self.connection = connection
     }
 

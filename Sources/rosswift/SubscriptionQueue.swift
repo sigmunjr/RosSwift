@@ -24,7 +24,7 @@ internal final class SubscriptionQueue: CallbackInterface {
         let deserializer: MessageDeserializer
         let hasTrackedObject: Bool
         let trackedObject: AnyObject?
-        let receiptTime: RosTime.Time
+        let receiptTime: Time
     }
 
     private var queue: Deque<Item>
@@ -48,7 +48,7 @@ internal final class SubscriptionQueue: CallbackInterface {
               deserializer: MessageDeserializer,
               hasTrackedObject: Bool = false,
               trackedObject: AnyObject? = nil,
-              receiptTime: RosTime.Time = RosTime.Time()) -> Bool {
+              receiptTime: Time = Time()) -> Bool {
 
         let item = Item(helper: helper,
                         deserializer: deserializer,

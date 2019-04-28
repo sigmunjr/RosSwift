@@ -160,7 +160,7 @@ public final class Ros: Hashable {
             node_name.append("_\(WallTime.now.nanoseconds)")
         }
 
-        Ros.Console.setFixedFilterToken(key: "node", val: node_name)
+        Console.setFixedFilterToken(key: "node", val: node_name)
 
         self.namespace = ns
         self.name = node_name
@@ -366,7 +366,7 @@ public final class Ros: Hashable {
 
     public func waitForShutdown() {
         while isRunning {
-            _ = RosTime.WallDuration(seconds: 0.05).sleep()
+            _ = WallDuration(seconds: 0.05).sleep()
         }
 //        promise.succeed(())
     }
@@ -407,7 +407,7 @@ public final class Ros: Hashable {
             signal(SIGTERM, basicSigintHandler)
         }
 
-        RosTime.Time.initialize()
+        Time.initialize()
 
         if !initOptions.contains(.noRosout) {
             let appender = ROSOutAppender()
@@ -433,7 +433,7 @@ public final class Ros: Hashable {
 
         let useSimTime = param.param(name: "/use_sim_time", defaultValue: false)
         if useSimTime {
-            RosTime.Time.setNow(RosTime.Time())
+            Time.setNow(Time())
         }
 
         if useSimTime {

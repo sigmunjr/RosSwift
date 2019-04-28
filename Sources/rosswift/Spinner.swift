@@ -29,7 +29,7 @@ final class SingleThreadSpinner: Spinner {
             fatalError("SingleThreadedSpinner: \(DEFAULT_ERROR_MESSAGE) You might want to use a MultiThreadedSpinner instead.")
         }
 
-        let timeout = RosTime.WallDuration(milliseconds: 100)
+        let timeout = WallDuration(milliseconds: 100)
         while ros.isRunning {
             useQueue.callAvailable(timeout: timeout)
         }
@@ -107,7 +107,7 @@ final class AsyncSpinnner {
         disableAllSignalsInThisThread()
         let queue = callbackQueue
         let useCallAvailable = threadCount == 1
-        let timeout = RosTime.WallDuration(milliseconds: 100)
+        let timeout = WallDuration(milliseconds: 100)
         while running.load() && ros.isRunning {
             if useCallAvailable {
                 queue.callAvailable(timeout: timeout)

@@ -20,8 +20,6 @@ protocol ConnectionProtocol {
 
 }
 
-extension Nio {
-
 typealias ReadFinishedFunc = (Connection, [UInt8], Int, Bool) -> Void
 typealias WriteFinishedFunc = (Connection) -> Void
 typealias DropFunc = (Notification) -> Void
@@ -92,4 +90,3 @@ typealias DropFunc = (Notification) -> Void
 
 }
 
-}

@@ -48,8 +48,8 @@ class serializationTests: XCTestCase {
         XCTAssertEqual(Float32(5), serializeAndDeserialize(Float32(5)))
         XCTAssertEqual(Float64(5), serializeAndDeserialize(Float64(5)))
         XCTAssertEqual(Double(5), serializeAndDeserialize(Double(5)))
-        XCTAssertEqual(RosTime.Time(sec: 100, nsec: 234), serializeAndDeserialize(RosTime.Time(sec: 100, nsec: 234)))
-        XCTAssertEqual(RosTime.Duration(nanosec: 12234), serializeAndDeserialize(RosTime.Duration(nanosec: 12234)))
+        XCTAssertEqual(Time(sec: 100, nsec: 234), serializeAndDeserialize(Time(sec: 100, nsec: 234)))
+        XCTAssertEqual(Duration(nanosec: 12234), serializeAndDeserialize(Duration(nanosec: 12234)))
         XCTAssertEqual("string", serializeAndDeserialize("string"))
         var str = "hello world"
         str.append("hello world22")

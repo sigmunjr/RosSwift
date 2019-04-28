@@ -21,6 +21,6 @@ struct RosgraphMsgs {
                 """
         static let hasHeader = false
 
-        var time: RosTime.Time
+        var time: Time
     }
 }

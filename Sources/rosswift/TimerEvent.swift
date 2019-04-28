@@ -26,7 +26,7 @@ protocol Event {
 import Foundation
 import RosTime
 
-/// Structure passed as a parameter to the callback invoked by a `RosTime.Timer`
+/// Structure passed as a parameter to the callback invoked by a `Timer`
 
 public struct TimerEvent: Event {
     typealias EventTime = Time

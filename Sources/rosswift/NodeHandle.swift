@@ -253,7 +253,7 @@ public final class NodeHandle {
     ///     - autostart: If true (default), return timer that is already started
 
 
-    func createSteadyTimer(period: RosTime.WallDuration,
+    func createSteadyTimer(period: WallDuration,
                            oneshot: Bool = false,
                            autostart: Bool = true,
                            trackedObject: AnyObject? = nil,

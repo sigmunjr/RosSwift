@@ -32,8 +32,6 @@ class NameRemappingWithNamespace: XCTestCase {
         ros.param.set(key: "/a/test_local2", value: "asdf")
         ros.param.set(key: "/b/test_relative", value: "asdf")
 
-        let tl = ros.resolve(name: "test_local")
-
         var param = ""
 
         XCTAssertEqual(ros.resolve(name: "test_full"), "/b/test_full")

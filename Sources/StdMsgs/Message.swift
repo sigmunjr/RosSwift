@@ -41,7 +41,7 @@ struct MessageHeader: Message {
 
 
     let seq : UInt32
-    let stamp : RosTime.Time
+    let stamp : Time
     let frame_id : UInt8
 }
 

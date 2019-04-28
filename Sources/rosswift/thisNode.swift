@@ -102,7 +102,7 @@ extension Ros {
 //            node_name = Names.resolve(ns: ns, name: node_name)!
 //
 //            if options.contains(.anonymousName) && !disableAnon {
-//                node_name.append("_\(RosTime.WallTime.now().toNSec())")
+//                node_name.append("_\(WallTime.now().toNSec())")
 //            }
 //
 //            Ros.Console.setFixedFilterToken(key: "node", val: node_name)

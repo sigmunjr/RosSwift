@@ -189,7 +189,7 @@ class connectionTests: XCTestCase {
             let helper = SubscribeHelper()
             let sub_class = n.subscribe(topic: "test", queueSize: 0, callback: helper.callback)
             XCTAssertNotNil(sub_class)
-            let d = RosTime.Duration(milliseconds: 50)
+            let d = Duration(milliseconds: 50)
             var last_class_count = helper.recv_count_
             while last_class_count == helper.recv_count_ {
                 pub.publish(message: msg)
@@ -227,9 +227,11 @@ class connectionTests: XCTestCase {
         do {
             let n = ros.createNode()
             let pub1 = n.advertise(topic: "/test", message: std_msgs.float64.self)
+            XCTAssertNotNil(pub1)
             
             do {
                 let pub2 = n.advertise(topic: "/test", message: std_msgs.float64.self)
+                XCTAssertNotNil(pub2)
 
                 let topics1 = ros.getAdvertisedTopics()
                 let t1 = topics1.first(where: { $0 == "/test" })
@@ -262,6 +264,7 @@ class connectionTests: XCTestCase {
         let s2 = n2.subscribe(topic: "/ett/test", queueSize: 100) { (msg: Int64) -> Void in
             received += 1
         }
+        XCTAssertNotNil(s2)
 
         DispatchQueue(label: "r1").async {
             r2.spin()
@@ -291,6 +294,7 @@ class connectionTests: XCTestCase {
         let s = n.subscribe(topic: "/testInternal", queueSize: 10) { (msg: Int64) -> Void in
             received += 1
         }
+        XCTAssertNotNil(s)
 
         DispatchQueue(label: "r").async {
             r.spin()
