@@ -140,7 +140,7 @@ while ros.ok {
     natter_pub.publish(message: sm)
     chatter_pub.publish(message: std_msgs.string("Hello \(j)"))
 
-    let header = std_msgs.header(seq: UInt32(j), stamp: time, frameID: 2)
+    let header = std_msgs.Header(seq: UInt32(j), stamp: time, frameID: 2)
     let lin = geometry_msgs.Vector3(x: 1, y: Float64(j), z: sin(Float64(j)))
     let ang = geometry_msgs.Vector3(x: 2.5, y: cos(Float64(j)), z: 4.6 )
     let tw = geometry_msgs.Twist(linear: lin, angular: ang)

@@ -54,6 +54,8 @@ let package = Package(
                  dependencies: ["BinaryCoder"]),
         .testTarget( name: "rosswiftTests",
                      dependencies: ["RosSwift","StdMsgs","BinaryCoder"]),
+        .testTarget( name: "msgBuilderTests",
+                     dependencies: ["msgbuilder"]),
         ]
 )
 

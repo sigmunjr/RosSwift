@@ -9,7 +9,7 @@ import Foundation
 
 public struct FileLog {
 
-    let logDirectory: String
+    var logDirectory: String = ""
 
     public init(thisNodeName: String, remappings: StringStringMap) {
         // Log filename can be specified on the command line through __log

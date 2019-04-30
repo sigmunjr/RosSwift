@@ -9,7 +9,7 @@ import Foundation
 import RosTime
 
 extension std_msgs {
-    public struct header: Message {
+    public struct Header: Message {
         public static var md5sum: String = "2176decaecbce78abc3b96ef049fabed"
         public static var datatype = "std_msgs/Header"
         public static var definition = """
