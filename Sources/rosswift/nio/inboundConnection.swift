@@ -42,17 +42,14 @@ final class InboundConnection {
         let bootstrap = ClientBootstrap(group: threadGroup)
             // Enable SO_REUSEADDR.
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
-            .channelInitializer { channel in
-                channel.pipeline.addHandlers([
-                    ByteToMessageHandler(
-                    LengthFieldBasedFrameDecoder(lengthFieldLength: .four, lengthFieldEndianness: .little)),
-                    InboundHandler(parent: self)
-                ])
-//                channel.pipeline.addHandler(InboundHandler(parent: self))
-        }
 
         do {
-            self.channel = try bootstrap.connect(host: host, port: port).wait()
+            self.channel = try bootstrap.connect(host: host, port: port).map { channel -> Channel in
+                channel.pipeline.addHandlers([
+                    ByteToMessageHandler(LengthFieldBasedFrameDecoder(lengthFieldLength: .four, lengthFieldEndianness: .little)),
+                    InboundHandler(parent: self)])
+                return channel
+            }.wait()
         } catch {
             ROS_ERROR("bootstrap failed: \(error)")
         }

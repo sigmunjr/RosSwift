@@ -9,6 +9,17 @@ import BinaryCoder
 import Foundation
 
 
+fileprivate func wallSleep(sec: UInt32, nsec: UInt32) -> Bool {
+    var req = timespec(tv_sec: Int(sec), tv_nsec: Int(nsec))
+    var rem = timespec(tv_sec: 0, tv_nsec: 0)
+    while nanosleep(&req, &rem) != 0 && !Time.gStopped {
+        req = rem
+
+    }
+    return !Time.gStopped
+}
+
+
 public struct Duration: DurationBase {
     public let nanoseconds: Int64
 
@@ -19,7 +30,7 @@ public struct Duration: DurationBase {
     @discardableResult
     public func sleep() -> Bool {
         if !Time.useSimTime {
-            return rosWallsleep(sec: UInt32(sec), nsec: UInt32(nsec))
+            return wallSleep(sec: UInt32(sec), nsec: UInt32(nsec))
         }
 
         var start = Time.now
@@ -30,7 +41,7 @@ public struct Duration: DurationBase {
 
         var didSleep = false
         while !Time.gStopped && Time.now < end {
-            _ = rosWallsleep(sec: 0, nsec: 1_000_000)
+            _ = wallSleep(sec: 0, nsec: 1_000_000)
             didSleep = true
             if start.isZero() {
                 start = Time.now
@@ -54,7 +65,7 @@ public struct WallDuration: DurationBase {
 
     @discardableResult
     public func sleep() -> Bool {
-        return rosWallsleep(sec: UInt32(sec), nsec: UInt32(nsec))
+        return wallSleep(sec: UInt32(sec), nsec: UInt32(nsec))
     }
 
     public static func + (lhs: WallDuration, rhs: WallDuration) -> WallDuration {

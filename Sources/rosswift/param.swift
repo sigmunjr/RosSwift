@@ -16,7 +16,7 @@ public final class Param {
     var gParameters = ParameterStorage()
     unowned var ros: Ros!
 
-    init() {
+    internal init() {
     }
 
     /// Delete a parameter from the parameter server.
@@ -242,7 +242,7 @@ public final class Param {
         }
     }
 
-    public func invalidateParentParams(_ key: String) {
+    func invalidateParentParams(_ key: String) {
         guard var nsKey = Names.parentNamespace(name: key) else {
             return
         }

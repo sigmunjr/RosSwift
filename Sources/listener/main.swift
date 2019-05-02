@@ -51,18 +51,9 @@ let aab = n.subscribe(topic: "/chatter", queueSize: 1, callback: a.chatterCallba
 let bab = n.subscribe(topic: "/chatter", queueSize: 1, callback: b.chatterCallback)
 let cab = n.subscribe(topic: "/chatter", queueSize: 1, callback: chatterCallbackEvent)
 
-let sub = n.subscribe(topic: "/natter") { (msg: geometry_msgs.Point) -> Void in
+let sub = n.subscribe(topic: "/natter") { (msg: geometry_msgs.Point) in
     print("accel: [\(msg)]")
 }
 
-
 n.spinThread()
-
-//do {
-//    try future.wait()
-//} catch {
-//    print(error.localizedDescription)
-//}
-
-
 

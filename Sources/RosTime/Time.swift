@@ -69,7 +69,7 @@ public struct Time: TimeBase {
             }
         }
 
-        let time = rosWalltime()
+        let time = walltime()
         return Time(sec: time.sec, nsec: time.nsec)
     }
 
