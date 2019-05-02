@@ -4,9 +4,9 @@
 import PackageDescription
 
 #if os(Linux)
-let msgDep: [Target.Dependency] = ["OpenSSL"]
+let msgDep: [Target.Dependency] = ["OpenSSL","StdMsgs"]
 #else
-let msgDep: [Target.Dependency] = []
+let msgDep: [Target.Dependency] = ["StdMsgs"]
 #endif
 
 let package = Package(
@@ -18,11 +18,12 @@ let package = Package(
         .executable(name: "listener", targets: ["listener"]),
         .executable(name: "msgbuilder", targets: ["msgbuilder"]),
         .library(name: "geometry_msgs", targets: ["geometry_msgs"]),
+        .library(name: "sensor_msgs", targets: ["sensor_msgs"]),
         .library(name: "StdMsgs", targets: ["StdMsgs"]),
         .library(name: "RosTime", targets: ["RosTime"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.1"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.2"),
         .package(url: "https://github.com/tgu/BinaryCoder.git", from: "1.1.0"),
         .package(url: "https://github.com/IBM-Swift/HeliumLogger.git", from: "1.8.1"),
         .package(url: "https://github.com/attaswift/Deque.git", from: "3.1.1"),
@@ -48,6 +49,9 @@ let package = Package(
         .target( name: "geometry_msgs",
                  dependencies: ["StdMsgs"],
                  path: "Sources/msgs/geometry_msgs"),
+        .target( name: "sensor_msgs",
+                 dependencies: ["StdMsgs","geometry_msgs"],
+                 path: "Sources/msgs/sensor_msgs"),
         .target( name: "StdMsgs",
                  dependencies: ["RosTime"]),
         .target( name: "RosTime",

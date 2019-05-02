@@ -110,12 +110,13 @@ public struct Service {
         
         if let server = ros.serviceManager.lookupService(name: mappedName) {
             let keymap = ["probe": "1", "md5sum": "*", "callerid": ros.name, "service": mappedName]
-            let transport = TransportTCP(pipeline: [ByteToMessageHandler(MessageDelimiterCodec()),
-                                                    ByteToMessageHandler(HeaderMessageCodec()),
-                                                    TransportTCP.Handler(callback: callback)])
+            let transport = TransportTCP()
             do {
 
             try transport.connect(host: server.host, port: Int(server.port)).map { channel -> Void in
+                channel.pipeline.addHandlers([ByteToMessageHandler(MessageDelimiterCodec()),
+                                              ByteToMessageHandler(HeaderMessageCodec()),
+                                              TransportTCP.Handler(callback: callback)])
                 let buffer = Header.write(keyVals: keymap)
                 do {
                     let sizeBuffer = try BinaryEncoder.encode(UInt32(buffer.count))

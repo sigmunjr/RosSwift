@@ -15,18 +15,8 @@ public struct WallTime: TimeBase {
         nanoseconds = nanosec
     }
 
-
     public static var now: WallTime {
         let time = rosWalltime()
         return WallTime(sec: time.sec, nsec: time.nsec)
     }
-
-//    public static func + (lhs: WallTime, rhs: WallDuration) -> WallTime {
-//        return WallTime(nanosec: lhs.toNSec() + UInt64(rhs.toNSec()))
-//    }
-//
-//    public static func - (lhs: WallTime, rhs: WallTime) -> WallDuration {
-//        return WallDuration(nanosec: Int64(lhs.toNSec()) - Int64(rhs.toNSec()))
-//    }
-
 }

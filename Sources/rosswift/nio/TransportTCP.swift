@@ -99,10 +99,9 @@ public final class TransportTCP {
 
     let bootstrap: ClientBootstrap
 
-    public init(pipeline: [ChannelHandler]) {
+    public init() {
         self.bootstrap = ClientBootstrap(group: threadGroup.next())
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
-            .channelInitializer { $0.pipeline.addHandlers(pipeline) }
     }
 
     public func connect(host: String, port: Int) -> EventLoopFuture<Channel> {

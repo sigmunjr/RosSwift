@@ -80,7 +80,7 @@ extension Ros {
         var copy = name
 
         if copy.first! == "~" {
-            copy = Names.append(name, String(copy.dropFirst()))
+            copy = Names.append(self.name, String(copy.dropFirst()))
         }
 
         if copy.first! != "/" {

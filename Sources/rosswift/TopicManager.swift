@@ -23,8 +23,6 @@ func md5sumsMatch(lhs: String, rhs: String) -> Bool {
 
     internal final class TopicManager {
 
-//        static let instance = TopicManager()
-
         let advertisedTopicsMutex = NSRecursiveLock()
         let subsQueue = DispatchQueue(label: "subs_mutex_")
         let shuttingDownQueue = DispatchQueue(label: "shutting_down_mutex_")

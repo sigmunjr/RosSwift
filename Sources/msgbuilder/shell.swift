@@ -13,7 +13,6 @@ struct Shell {
 
     init?() {
         env = ProcessInfo.processInfo.environment
-        print(env)
 
         guard env["PYTHONPATH"] != nil else {
             print("PYTHONPATH is not set")
@@ -24,7 +23,6 @@ struct Shell {
             return nil
         }
         rosmsgPath = Shell.getRosPath(rosPath: rosPath)
-
     }
 
     static func getRosPath(rosPath: String) -> URL {

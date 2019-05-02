@@ -52,7 +52,7 @@ class NameRemappingWithNamespace: XCTestCase {
         XCTAssertNil(ros.resolve(name: "1244"))
         XCTAssertEqual(ros.resolve(name: "åäö"), "/a/åäö")
 
-        let node_name = ros.getName()
+        let node_name = ros.name
         XCTAssertEqual(node_name, "/a/testParameterRemapping")
 
     }

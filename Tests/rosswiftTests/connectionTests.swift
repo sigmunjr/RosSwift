@@ -116,7 +116,7 @@ class connectionTests: XCTestCase {
             }
         }
 
-        guard let topics = try? ros.master.getTopics(callerId: ros.getName()).wait() else {
+        guard let topics = try? ros.master.getTopics(callerId: ros.name).wait() else {
             XCTFail()
             return
         }
