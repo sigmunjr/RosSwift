@@ -74,5 +74,5 @@ let package = Package(
 
 #if os(Linux)
 package.dependencies.append(
-    .package(url: "https://github.com/IBM-Swift/OpenSSL.git", from: "1.0.1"))
+    .package(url: "https://github.com/IBM-Swift/OpenSSL.git", from: "2.2.2"))
 #endif
